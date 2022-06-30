@@ -41,14 +41,16 @@ class User_roles(models.Model):
     id = models.AutoField(editable=False,
                           primary_key=True)
 
-    user_id = models.ForeignKey(User,
-                                on_delete=models.CASCADE)
-    group_id = models.ForeignKey(User_groups_names,
-                                 on_delete=models.CASCADE,
-                                 related_name='users')
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE)
+    group = models.ForeignKey(User_groups_names,
+                              on_delete=models.CASCADE,
+                              related_name='users')
 
     class Meta:
         db_table = 'user_roles'
+        verbose_name = 'user roles'
+        verbose_name_plural = 'user roles'
 
 
 class Category(models.Model):
@@ -74,12 +76,13 @@ class Listing(models.Model):
     id = models.AutoField(editable=False, primary_key=True)
 
     active = models.BooleanField(default=True, editable=False)
-    user_id = models.ForeignKey(User,
-                                on_delete=models.CASCADE,
-                                verbose_name="User id")
-    category_id = models.ForeignKey(Category,
-                                    on_delete=models.SET(Category(name='other')),
-                                    verbose_name="Category id")
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             verbose_name="User id")
+    # TODO Change CASCADE to set DEFAULT
+    category = models.ForeignKey(Category,
+                                 on_delete=models.CASCADE,
+                                 verbose_name="Category id")
     start_value = models.PositiveIntegerField("Start bet",
                                               help_text="Start bet (Integer value)")
     title = models.CharField("Title",
@@ -108,12 +111,12 @@ class Wishlist(models.Model):
     id = models.AutoField(editable=False,
                           primary_key=True)
 
-    user_id = models.ForeignKey(User,
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             verbose_name="User id")
+    listing = models.ForeignKey(Listing,
                                 on_delete=models.CASCADE,
-                                verbose_name="User id")
-    listing_id = models.ForeignKey(Listing,
-                                   on_delete=models.CASCADE,
-                                   verbose_name="Listing id")
+                                verbose_name="Listing id")
 
     class Meta:
         db_table = 'wishlist'
@@ -124,12 +127,12 @@ class Wishlist(models.Model):
 class Comments(models.Model):
     id = models.BigAutoField(editable=False, primary_key=True)
 
-    user_id = models.ForeignKey(User,
-                                on_delete=models.SET('Deleted user'),
-                                verbose_name="User id")
-    listing_id = models.ForeignKey(Listing,
-                                   on_delete=models.CASCADE,
-                                   verbose_name="Listing id")
+    user = models.ForeignKey(User,
+                             on_delete=models.SET('Deleted user'),
+                             verbose_name="User id")
+    listing = models.ForeignKey(Listing,
+                                on_delete=models.CASCADE,
+                                verbose_name="Listing id")
     text = models.TextField("Comment",
                             max_length=120,
                             help_text="Comment (max 120 characters)")
@@ -145,12 +148,12 @@ class Comments(models.Model):
 class Bids(models.Model):
     id = models.BigAutoField(editable=False, primary_key=True)
 
-    listing_id = models.ForeignKey(Listing,
-                                   on_delete=models.CASCADE,
-                                   verbose_name="Listing id")
-    user_id = models.ForeignKey(User,
-                                on_delete=models.SET('Deleted user'),
-                                verbose_name="User id")
+    listing = models.ForeignKey(Listing,
+                                on_delete=models.CASCADE,
+                                verbose_name="Listing id")
+    user = models.ForeignKey(User,
+                             on_delete=models.SET('Deleted user'),
+                             verbose_name="User id")
     value = models.PositiveIntegerField("New bid",
                                         help_text="Your bid")
     timestamp = models.DateTimeField(editable=False,
@@ -166,9 +169,9 @@ class Info_msg(models.Model):
     id = models.BigAutoField(editable=False, primary_key=True)
 
     is_read = models.BooleanField(default=False, editable=False)
-    user_id = models.ForeignKey(User,
-                                on_delete=models.CASCADE,
-                                verbose_name="User id")
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             verbose_name="User id")
     text = models.TextField(max_length=120, editable=False)
     timestamp = models.DateTimeField(editable=False,
                                      auto_now=True)

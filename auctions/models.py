@@ -5,16 +5,14 @@ from django.db import models
 class User(AbstractUser):
     id = models.AutoField(editable=False,
                           primary_key=True)
-    id.db_index()
 
     timestamp = models.DateTimeField(editable=False,
                                      auto_now=True)
 
 
-class User_groups(models.Model):
+class User_groups_names(models.Model):
     id = models.AutoField(editable=False,
                           primary_key=True)
-    id.db_index()
 
     class UserGroupsNames(models.TextChoices):
         ADMIN = 'ADMIN', 'ADMIN'
@@ -42,11 +40,10 @@ class User_groups(models.Model):
 class User_roles(models.Model):
     id = models.AutoField(editable=False,
                           primary_key=True)
-    id.db_index()
 
     user_id = models.ForeignKey(User,
                                 on_delete=models.CASCADE)
-    group_id = models.ForeignKey(User_groups,
+    group_id = models.ForeignKey(User_groups_names,
                                  on_delete=models.CASCADE,
                                  related_name='users')
 
@@ -57,7 +54,6 @@ class User_roles(models.Model):
 class Category(models.Model):
     id = models.AutoField(editable=False,
                           primary_key=True)
-    id.db_index()
 
     name = models.CharField("Category name",
                             max_length=16,
@@ -76,14 +72,13 @@ class Category(models.Model):
 
 class Listing(models.Model):
     id = models.AutoField(editable=False, primary_key=True)
-    id.db_index()
 
     active = models.BooleanField(default=True, editable=False)
     user_id = models.ForeignKey(User,
                                 on_delete=models.CASCADE,
                                 verbose_name="User id")
     category_id = models.ForeignKey(Category,
-                                    on_delete=models.SET_DEFAULT,
+                                    on_delete=models.SET(Category(name='other')),
                                     verbose_name="Category id")
     start_value = models.PositiveIntegerField("Start bet",
                                               help_text="Start bet (Integer value)")
@@ -112,7 +107,6 @@ class Listing(models.Model):
 class Wishlist(models.Model):
     id = models.AutoField(editable=False,
                           primary_key=True)
-    id.db_index()
 
     user_id = models.ForeignKey(User,
                                 on_delete=models.CASCADE,
@@ -129,7 +123,6 @@ class Wishlist(models.Model):
 
 class Comments(models.Model):
     id = models.BigAutoField(editable=False, primary_key=True)
-    id.db_index()
 
     user_id = models.ForeignKey(User,
                                 on_delete=models.SET('Deleted user'),
@@ -151,7 +144,6 @@ class Comments(models.Model):
 
 class Bids(models.Model):
     id = models.BigAutoField(editable=False, primary_key=True)
-    id.db_index()
 
     listing_id = models.ForeignKey(Listing,
                                    on_delete=models.CASCADE,
@@ -172,7 +164,6 @@ class Bids(models.Model):
 
 class Info_msg(models.Model):
     id = models.BigAutoField(editable=False, primary_key=True)
-    id.db_index()
 
     is_read = models.BooleanField(default=False, editable=False)
     user_id = models.ForeignKey(User,

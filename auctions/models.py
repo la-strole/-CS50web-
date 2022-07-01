@@ -1,5 +1,16 @@
+import logging
+import os
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+
+# Add logger
+logger_models = logging.getLogger('models')
+f_handler = logging.FileHandler('general.log')
+f_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+f_handler.setFormatter(f_format)
+logger_models.addHandler(f_handler)
+logger_models.setLevel(os.getenv('DJANGO_LOG_LEVEL'))
 
 
 class User(AbstractUser):

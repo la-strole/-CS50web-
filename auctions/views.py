@@ -1,3 +1,6 @@
+import logging
+import os
+
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseRedirect
@@ -5,6 +8,14 @@ from django.shortcuts import render
 from django.urls import reverse
 
 from .models import User
+
+# Add logger
+logger_views = logging.getLogger('views')
+f_handler = logging.FileHandler('general.log')
+f_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+f_handler.setFormatter(f_format)
+logger_views.addHandler(f_handler)
+logger_views.setLevel(os.getenv('DJANGO_LOG_LEVEL'))
 
 
 def index(request):

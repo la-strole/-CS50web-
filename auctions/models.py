@@ -17,51 +17,12 @@ class User(AbstractUser):
     id = models.AutoField(editable=False,
                           primary_key=True)
 
-    timestamp = models.DateTimeField(editable=False,
-                                     auto_now=True)
-
-
-class User_groups_names(models.Model):
-    id = models.AutoField(editable=False,
-                          primary_key=True)
-
-    class UserGroupsNames(models.TextChoices):
-        ADMIN = 'ADMIN', 'ADMIN'
-        WATCHER = 'Watcher', 'Watcher'
-        PARTICIPANT = 'Participant', 'Participant'
-        CREATOR = 'Creator', 'Creator'
-        MODERATOR = 'Moderator', 'Moderator'
-
-    group_name = models.CharField("User group name",
-                                  max_length=16,
-                                  help_text="User group name (max 16 characters)",
-                                  choices=UserGroupsNames.choices,
-                                  unique=True,
-                                  default=UserGroupsNames.WATCHER)
-
-    class Meta:
-        db_table = 'user_groups'
-        verbose_name = 'User Groups'
-        verbose_name_plural = 'User Groups'
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.timestamp = self.date_joined
 
     def __str__(self):
-        return f'{self.group_name}'
-
-
-class User_roles(models.Model):
-    id = models.AutoField(editable=False,
-                          primary_key=True)
-
-    user = models.ForeignKey(User,
-                             on_delete=models.CASCADE)
-    group = models.ForeignKey(User_groups_names,
-                              on_delete=models.CASCADE,
-                              related_name='users')
-
-    class Meta:
-        db_table = 'user_roles'
-        verbose_name = 'user roles'
-        verbose_name_plural = 'user roles'
+        return f'{self.get_username()}({self.first_name} {self.last_name})'
 
 
 class Category(models.Model):
@@ -115,7 +76,7 @@ class Listing(models.Model):
         verbose_name_plural = 'Listings'
 
     def __str__(self):
-        return f'{self.title} from {self.user_id}'
+        return f'{self.title} from {self.user}'
 
 
 class Wishlist(models.Model):

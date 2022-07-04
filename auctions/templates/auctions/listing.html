@@ -1,19 +1,61 @@
 {% extends "auctions/layout.html" %}
 {% load static %}
+{% load humanize %}
 
 {% block body %}
-<div class="card" style="width: 18rem;">
-  {% if data.image_url %}
-    <img src="{{ data.image_url }}" class="card-img-top" alt="Image for {{ data.title }}">
-  {% else %}
-    <img src="{% static 'auctions/no_image.jpg' %}" class="card-img-top" alt="Image for {{ data.title }}">
-  {% endif %}
-  <div class="card-body">
-    <h5 class="card-title">{{ data.title }}</h5>
-    <p class="card-text">{{ data.description }}</p>
-    {% if user.is_authenticated %}
-      <a href="#" class="btn btn-primary">Go somewhere</a>
-    {% endif %}
+
+<div class="card mb-3 mx-auto" style="max-width: 960px;">
+  <div class="row no-gutters">
+
+        <div class="col-md-4">
+          {% if data.image_url %}
+              <img src="{{ data.image_url }}" class="card-img-top" alt="Image for {{ data.title }}">
+          {% else %}
+              <img src="{% static 'auctions/no_image.jpg' %}" class="card-img-top" alt="Image for {{ data.title }}">
+          {% endif %}
+        </div>
+
+        <div class="col-md-8">
+              <div class="card-body">
+                    <h5 class="card-title">{{ data.title }}</h5>
+                    <h6 class="card-subtitle mb-3 text-muted">Category: {{ data.category }}</h6>
+                    <p class="card-text">{{ data.description }}</p>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="btn btn-primary">{{ current_bid|intcomma }} $</span>
+                        </div>
+              {% if user.is_authenticated %}
+                        <form action="{% url 'auctions:listing' data.id %}" method="post" class="form-inline">
+                            {% csrf_token %}
+                            <input type="number" name="bid" min="{{ current_bid|add:"1" }}" class="form-control"  aria-label="bid" aria-describedby="button-addon2">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-success" type="submit" id="button-addon2">Raise</button>
+                            </div>
+                        </form>
+
+                    </div>
+
+                    <form action="{% url 'auctions:listing' data.id %}" method="post" class="form-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="wishlist" value="{{data.id}}">
+                        <button class="btn btn-outline-info mt-4" type="submit">Add to wishlist</button>
+                    </form>
+                    {% comment %} If user owner of listing — he can close it {% endcomment %}
+                    {% if user == data.user %}
+                    <button class="btn btn-outline-danger mt-4" type="button">Close listing</button>
+                    {% endif %}
+
+              {% else %}
+                    </div>
+              {% endif %}
+              </div>
+        </div>
+  </div>
+  <div class="card-footer text-muted">
+    Published at {{ data.timestamp }}
   </div>
 </div>
+
 {% endblock %}
+
+

@@ -3,7 +3,7 @@ import os
 
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required
@@ -86,7 +86,7 @@ def create_listing(request):
             result = Listing.create_listing(data)
             if result:
                 success_msg = f"Create new listing: {result.title}."
-                return HttpResponseRedirect(reverse("auctions:listing"))
+                return HttpResponseRedirect(reverse("auctions:listing", kwargs={'listing_id': result.id}))
             else:
                 error_msg = 'Can not add this listing, please try again.'
                 return HttpResponseRedirect(reverse("auctions:create_listing"))
@@ -101,11 +101,50 @@ def listing_view(request, listing_id: int):
     Return listing view for listing_id
     :type listing_id: int
     """
-    try:
-        listing_id = int(listing_id)
-        assert listing_id > 0
-    except (ValueError, AssertionError) as e:
-        logger_views.debug(f"Listing_id in request is not integer. it is ({listing_id})")
+    if request.method == "GET":
+        try:
+            listing_id = int(listing_id)
+            assert listing_id > 0
+        except (ValueError, AssertionError) as e:
+            logger_views.debug(f"Listing_id in request is not integer. it is ({listing_id})")
 
-    data = get_object_or_404(Listing, pk=listing_id)
-    return render(request, "auctions/listing.html", {"data": data})
+        listing = get_object_or_404(Listing, pk=listing_id)
+        if listing.active:
+            current_bid = Listing.get_current_bid(listing)
+            return render(request, "auctions/listing.html", {"data": listing,
+                                                             "current_bid": current_bid
+                                                             })
+        else:
+            msg = "Listing is not active."
+            raise Http404(msg)
+    elif request.method == "POST":
+
+        try:
+            listing = Listing.objects.get(id=listing_id)
+            assert listing
+            assert listing.active
+
+            bid = request.POST.get('bid', None)
+            wishlist_id = request.POST.get('wishlist', None)
+
+            # Raise bid
+            if bid:
+                assert int(bid) > int(Listing.get_current_bid(listing))
+                data = {'listing': listing,
+                        'user': request.user,
+                        'bid': bid
+                        }
+                result = Listing.raise_bid(data)
+                assert result
+
+            # Add/Delete from wishlist
+            elif wishlist_id:
+
+
+        except (TypeError, ValueError, AssertionError) as e:
+            logger_views.error(f"Can not work with listing. {e}.")
+            msg = "Can not work with listing."
+            raise Http404(msg)
+        return HttpResponseRedirect(reverse("auctions:listing", kwargs={'listing_id': listing_id}))
+    else:
+        raise Http404("Can not get page.")

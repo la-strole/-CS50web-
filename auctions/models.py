@@ -22,7 +22,6 @@ class User(AbstractUser):
         self.timestamp = self.date_joined
 
     def __str__(self):
-
         return f'{self.get_username()}({self.get_full_name()})'
 
 
@@ -97,6 +96,27 @@ class Listing(models.Model):
             logger_models.error(f"Can not create new listing. {e}, {type(e)}.")
             return None
 
+    @staticmethod
+    def get_current_bid(listing):
+
+        bids = Bids.objects.filter(listing=listing)
+        if not bids:
+            return listing.start_value
+        result = max(bids, key=lambda x: x.value)
+        return result.value
+
+    @staticmethod
+    def raise_bid(data: dict):
+        try:
+            result = Bids(listing=data['listing'],
+                          user=data['user'],
+                          value=data['bid'])
+            result.save()
+            return result
+        except (KeyError, ValueError) as e:
+            logger_models.error(f"Can not increase bid for listing data - {data}. {e}.")
+            return None
+
 
 class Wishlist(models.Model):
     id = models.AutoField(editable=False,
@@ -114,6 +134,10 @@ class Wishlist(models.Model):
         verbose_name = 'Wishlist'
         verbose_name_plural = 'Wishlists'
 
+    @staticmethod
+    def if_listing_in_wishlist(listing: Listing, user: User):
+        # TODO start from here
+        pass
 
 class Comments(models.Model):
     id = models.BigAutoField(editable=False, primary_key=True)

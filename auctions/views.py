@@ -4,10 +4,10 @@ import os
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required
-from .models import User
+from .models import User, Listing
 from auctions import forms
 
 # Add logger
@@ -75,7 +75,37 @@ def register(request):
         return render(request, "auctions/register.html")
 
 
-# @login_required(login_url=reverse_lazy("auctions:login"))
+@login_required(login_url=reverse_lazy("auctions:login"))
 def create_listing(request):
-    form = forms.CreateListing()
-    return render(request, 'auctions/create_listing.html', {'form': form})
+    if request.method == "POST":
+        populated_form = forms.CreateListing(request.POST)
+        if populated_form.is_valid():
+            data = populated_form.cleaned_data
+            logger_views.debug(f"Try to add  new listing ({data.get('title')}) to database for user {request.user}.")
+            data.update({'user': request.user})
+            result = Listing.create_listing(data)
+            if result:
+                success_msg = f"Create new listing: {result.title}."
+                return HttpResponseRedirect(reverse("auctions:listing"))
+            else:
+                error_msg = 'Can not add this listing, please try again.'
+                return HttpResponseRedirect(reverse("auctions:create_listing"))
+
+    elif request.method == "GET":
+        form = forms.CreateListing()
+        return render(request, 'auctions/create_listing.html', {'form': form})
+
+
+def listing_view(request, listing_id: int):
+    """
+    Return listing view for listing_id
+    :type listing_id: int
+    """
+    try:
+        listing_id = int(listing_id)
+        assert listing_id > 0
+    except (ValueError, AssertionError) as e:
+        logger_views.debug(f"Listing_id in request is not integer. it is ({listing_id})")
+
+    data = get_object_or_404(Listing, pk=listing_id)
+    return render(request, "auctions/listing.html", {"data": data})

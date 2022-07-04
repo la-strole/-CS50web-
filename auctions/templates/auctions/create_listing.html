@@ -7,8 +7,32 @@
     <h2> Create a new listing</h2>
     <form action="{% url 'auctions:create_listing' %}" method="post">
         {% csrf_token %}
+        <div class="row">
+            <div class="col-2">
+                {{ form.category|as_crispy_field }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-6">
+                {{ form.title|as_crispy_field }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-6">
+                {{ form.description|as_crispy_field }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-6">
+                {{ form.image_url|as_crispy_field }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-2">
+                {{ form.start_value|as_crispy_field }}
+            </div>
+        </div>
 
-        {{ form|crispy }}
         <button type="submit" class="btn btn-success">Save listing</button>
     </form>
 {% endblock %}

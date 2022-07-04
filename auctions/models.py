@@ -22,7 +22,8 @@ class User(AbstractUser):
         self.timestamp = self.date_joined
 
     def __str__(self):
-        return f'{self.get_username()}({self.first_name} {self.last_name})'
+
+        return f'{self.get_username()}({self.get_full_name()})'
 
 
 class Category(models.Model):
@@ -78,6 +79,23 @@ class Listing(models.Model):
 
     def __str__(self):
         return f'{self.title} from {self.user}'
+
+    @staticmethod
+    def create_listing(kwargs: dict):
+        try:
+            listing = Listing(
+                user=kwargs['user'],
+                category=kwargs['category'],
+                start_value=kwargs['start_value'],
+                title=kwargs['title'],
+                description=kwargs['description'],
+                image_url=kwargs['image_url']
+            )
+            listing.save()
+            return listing
+        except (KeyError, ValueError) as e:
+            logger_models.error(f"Can not create new listing. {e}, {type(e)}.")
+            return None
 
 
 class Wishlist(models.Model):

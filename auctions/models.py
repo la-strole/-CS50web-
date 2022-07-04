@@ -27,7 +27,8 @@ class User(AbstractUser):
 
 class Category(models.Model):
     id = models.AutoField(editable=False,
-                          primary_key=True)
+                          primary_key=True,
+                          verbose_name="Category")
 
     name = models.CharField("Category name",
                             max_length=16,
@@ -54,7 +55,7 @@ class Listing(models.Model):
     # TODO Change CASCADE to set DEFAULT
     category = models.ForeignKey(Category,
                                  on_delete=models.CASCADE,
-                                 verbose_name="Category id")
+                                 verbose_name="Category")
     start_value = models.PositiveIntegerField("Start bet",
                                               help_text="Start bet (Integer value)")
     title = models.CharField("Title",

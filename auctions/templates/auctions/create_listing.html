@@ -1,9 +1,14 @@
 {% extends "auctions/layout.html" %}
+
+<!-- https://simpleisbetterthancomplex.com/tutorial/2018/08/13/how-to-use-bootstrap-4-forms-with-django.html -->
+{% load crispy_forms_tags %}
+
 {% block body %}
     <h2> Create a new listing</h2>
     <form action="{% url 'auctions:create_listing' %}" method="post">
         {% csrf_token %}
-        {{ form }}
-        <input type="submit" value="OK">
+
+        {{ form|crispy }}
+        <button type="submit" class="btn btn-success">Save listing</button>
     </form>
 {% endblock %}

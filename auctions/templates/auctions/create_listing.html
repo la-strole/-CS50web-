@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block body %}
-    <div class="container">
+    <div class="container-md">
         <h2> Create a new listing</h2>
         <form action="{% url 'auctions:create_listing' %}" method="post">
             {% csrf_token %}

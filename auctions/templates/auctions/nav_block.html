@@ -13,17 +13,25 @@
         <a class="nav-link active" href="{% url 'auctions:create_listing' %}">Create listing</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link active" href="{% url 'auctions:wishlist' %}">Wishlist</a>
+        {% if wishlist_bage == 0 %}
+          <a class="nav-link active" href="{% url 'auctions:wishlist' %}">Wishlist </a>
+        {% else %}
+          <a class="nav-link active" href="{% url 'auctions:wishlist' %}">Wishlist <span class="badge badge-primary">{{wishlist_bage}}</span></a>
+        {% endif %}
       </li>
       {% endif %}
       {% if categories %}
       <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          Category
+          Category <span class="badge badge-secondary">{{category_bage}}</span>
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
           {% for category in categories %}
-          <a class="dropdown-item" href="#">{{ category }}</a>
+              {% if request.path != '/' %}
+              <a class="dropdown-item" href="{{ request.path }}?f={{ category.name }}">{{ category|capfirst }}</a>
+              {% else %}
+              <a class="dropdown-item" href="index?f={{ category.name }}">{{ category|capfirst }}</a>
+              {% endif %}
           {% endfor %}
         </div>
       </li>
@@ -33,6 +41,9 @@
         {% if user.is_authenticated %}
         <span class="navbar-text">
             Signed in as <strong>{{ user.username }}</strong>
+        </span>
+        <span class="nav-item">
+            <a class="nav-link active" href="{% url 'auctions:create_listing' %}">Notification</a>
         </span>
         <span class="nav-item">
              <a class="nav-link active" href="{% url 'auctions:logout' %}">Log out</a>

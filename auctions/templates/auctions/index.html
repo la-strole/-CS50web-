@@ -13,13 +13,17 @@
       {% for listing in listings %}
         <div class="col mb-4">
             {% if user.is_authenticated %}
-            <a class="card mb-3 text-decoration-none text-reset h-100 justify-content-between" href="{% url 'auctions:listing' listing.id %}">
+                {% if user == listing.user %}
+                <a class="card mb-3 text-decoration-none text-reset h-100 justify-content-between border-danger" href="{% url 'auctions:listing' listing.id %}">
+                {% else %}
+                <a class="card mb-3 text-decoration-none text-reset h-100 justify-content-between" href="{% url 'auctions:listing' listing.id %}">
+                {% endif %}
             {% else %}
             <a class="card mb-3 text-decoration-none text-reset h-100 justify-content-between" href="#">
             {% endif %}
                 <div class="card-header text-center"><h3 class="mx-auto">{{ listing.title }} </h3> </div>
-                <div class="row no-gutters">
-                    <div class="col-md-4">
+                <div class="row no-gutters h-100">
+                    <div class="col-md-4 align-self-center">
                         {% if listing.image_url %}
                         <img src="{{ listing.image_url }}" class="card-img-top" alt="Image for {{ listing.title }}">
                         {% else %}
@@ -43,6 +47,8 @@
                 </div>
             </a>
         </div>
+     {% empty %}
+        <h2 class="text-center"> There are not listings yet.</h2>
      {% endfor %}
     </div>
 </div>

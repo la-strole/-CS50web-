@@ -8,6 +8,7 @@ app_name = 'auctions'
 
 urlpatterns = [
     path("", views.index.as_view(), name="index"),
+    path("index", views.index.as_view(), name='index_new'),
     path("login", views.login_view, name="login"),
     path("logout", views.logout_view, name="logout"),
     path("register", views.register, name="register"),

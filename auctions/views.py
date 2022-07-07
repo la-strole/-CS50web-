@@ -35,7 +35,12 @@ class index(generic.ListView):
     template_name = 'auctions/index.html'
 
     def get_queryset(self):
-        listings = Listing.objects.filter(active=True)
+        category_name = self.request.GET.get('f', '')
+        if category_name:
+            listings = Listing.objects.filter(active=True, category__name=category_name)
+            return listings
+        else:
+            listings = Listing.objects.filter(active=True)
         return listings
 
     def get_context_data(self, **kwargs):
@@ -43,6 +48,11 @@ class index(generic.ListView):
         context = super(index, self).get_context_data(**kwargs)
         categories = Category.objects.all()
         context['categories'] = categories
+        context['category_bage'] = self.request.GET.get('f', '')
+        if self.request.user.is_active:
+            context['wishlist_bage'] = len(Wishlist.objects.filter(user=self.request.user))
+        else:
+            context['wishlist_bage'] = ''
         return context
 
 
@@ -104,6 +114,7 @@ def create_listing(request):
         populated_form = forms.CreateListing(request.POST)
         if populated_form.is_valid():
             data = populated_form.cleaned_data
+            data['title'] = data['title'].lower().capitalize()
             logger_views.debug(f"Try to add  new listing ({data.get('title')}) to database for user {request.user}.")
             data.update({'user': request.user})
             result = Listing.create_listing(data)
@@ -140,6 +151,11 @@ class ListingView(generic.DetailView):
                       'exist_in_wishlist': Wishlist.exist_in_wishlist(self.object, user)
                       }
         context['listing'] = [Dataset(self.object, extra_data)]
+
+        if self.request.user.is_active:
+            context['wishlist_bage'] = len(Wishlist.objects.filter(user=self.request.user))
+        else:
+            context['wishlist_bage'] = ''
         return context
 
     def get_queryset(self):
@@ -216,7 +232,13 @@ class WishlistView(generic.ListView):
 
     def get_queryset(self):
         user = self.request.user
-        wish_listings = [wish.listing for wish in Wishlist.objects.filter(user=user, listing__active=True)]
+        category_filter = self.request.GET.get('f', '')
+        if category_filter:
+            wish_listings = [wish.listing for wish in Wishlist.objects.filter(user=user,
+                                                                              listing__active=True,
+                                                                              listing__category__name=category_filter)]
+        else:
+            wish_listings = [wish.listing for wish in Wishlist.objects.filter(user=user, listing__active=True)]
         ret_url = reverse('auctions:wishlist')
         ret_close_url = ret_url
         result = []
@@ -233,7 +255,13 @@ class WishlistView(generic.ListView):
         context = super(WishlistView, self).get_context_data(**kwargs)
         categories = Category.objects.all()
         context['categories'] = categories
+        context['category_bage'] = self.request.GET.get('f', '')
+        if self.request.user.is_active:
+            context['wishlist_bage'] = len(Wishlist.objects.filter(user=self.request.user))
+        else:
+            context['wishlist_bage'] = ''
         return context
+
 
 @login_required(login_url=reverse_lazy("auctions:login"))
 def close_listing(request, pk):
@@ -254,4 +282,3 @@ def close_listing(request, pk):
             raise Http404(msg)
     else:
         raise Http404()
-

@@ -71,6 +71,15 @@ class Listing(models.Model):
     timestamp = models.DateTimeField(editable=False,
                                      auto_now=True)
 
+    @property
+    def get_current_bid(self):
+
+        bids = Bids.objects.filter(listing=self)
+        if not bids:
+            return Bids(listing=self, user=self.user, value=self.start_value - 1)
+        result = max(bids, key=lambda x: x.value)
+        return result
+
     class Meta:
         db_table = 'listings'
         verbose_name = 'Listings'
@@ -97,24 +106,30 @@ class Listing(models.Model):
             return None
 
     @staticmethod
-    def get_current_bid(listing):
-
-        bids = Bids.objects.filter(listing=listing)
-        if not bids:
-            return listing.start_value
-        result = max(bids, key=lambda x: x.value)
-        return result.value
-
-    @staticmethod
     def raise_bid(data: dict):
         try:
             result = Bids(listing=data['listing'],
                           user=data['user'],
-                          value=data['bid'])
+                          value=data['value'])
             result.save()
             return result
         except (KeyError, ValueError) as e:
             logger_models.error(f"Can not increase bid for listing data - {data}. {e}.")
+            return None
+
+    @staticmethod
+    def close_listing(id: int):
+        try:
+            instance = Listing.objects.get(id=id)
+            instance.active = False
+            instance.save()
+            winner = instance.get_current_bid
+            result = {'best_bid': winner.value,
+                      'user_winner': winner.user
+                      }
+            return result
+        except Listing.DoesNotExist:
+            logger_models.error(f"Failed to delete listing with id=({id}).")
             return None
 
 
@@ -126,6 +141,7 @@ class Wishlist(models.Model):
                              on_delete=models.CASCADE,
                              verbose_name="User id")
     listing = models.ForeignKey(Listing,
+                                related_name='wishlist',
                                 on_delete=models.CASCADE,
                                 verbose_name="Listing id")
 
@@ -135,9 +151,33 @@ class Wishlist(models.Model):
         verbose_name_plural = 'Wishlists'
 
     @staticmethod
-    def if_listing_in_wishlist(listing: Listing, user: User):
-        # TODO start from here
-        pass
+    def delete_from_wishlist(listing: Listing, user: User):
+        try:
+            instance = Wishlist.objects.get(listing=listing, user=user)
+            instance.delete()
+            return True
+        except Wishlist.DoesNotExist:
+            logger_models.error(f"Failed to delete listing ({listing})f rom user's ({user}) wishlist.")
+            return None
+
+    @staticmethod
+    def add_to_wishlist(listing: Listing, user: User):
+        try:
+            instance = Wishlist(user=user, listing=listing)
+            instance.save()
+            return instance
+        except Exception:
+            logger_models.error(f"Failed to add listing ({listing}) to user's ({user}) wishlist.")
+            return None
+
+    @staticmethod
+    def exist_in_wishlist(listing: Listing, user: User) -> bool:
+        try:
+            instance = Wishlist.objects.get(user=user, listing=listing)
+            return True
+        except Wishlist.DoesNotExist:
+            return False
+
 
 class Comments(models.Model):
     id = models.BigAutoField(editable=False, primary_key=True)

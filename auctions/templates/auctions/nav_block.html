@@ -1,0 +1,50 @@
+<nav class="navbar navbar-light sticky-top navbar-expand-md mb-3" style="background-color: #e3f2fd;">
+  <a class="navbar-brand" href="{% url 'auctions:index' %}">Auctions</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse justify-content-between" id="navbarNavDropdown">
+    <ul class="navbar-nav">
+      <li class="nav-item active">
+        <a class="nav-link active" href="{% url 'auctions:index' %}">Active Listings <span class="sr-only">(current)</span></a>
+      </li>
+      {% if user.is_authenticated %}
+      <li class="nav-item">
+        <a class="nav-link active" href="{% url 'auctions:create_listing' %}">Create listing</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link active" href="{% url 'auctions:wishlist' %}">Wishlist</a>
+      </li>
+      {% endif %}
+      {% if categories %}
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Category
+        </a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+          {% for category in categories %}
+          <a class="dropdown-item" href="#">{{ category }}</a>
+          {% endfor %}
+        </div>
+      </li>
+      {% endif %}
+    </ul>
+    <div class="navbar-nav">
+        {% if user.is_authenticated %}
+        <span class="navbar-text">
+            Signed in as <strong>{{ user.username }}</strong>
+        </span>
+        <span class="nav-item">
+             <a class="nav-link active" href="{% url 'auctions:logout' %}">Log out</a>
+        </span>
+        {% else %}
+        <span class="nav-item">
+             <a class="nav-link active" href="{% url 'auctions:login' %}">Log In</a>
+        </span>
+        <span class="nav-item">
+             <a class="nav-link active" href="{% url 'auctions:register' %}">Register</a>
+        </span>
+        {% endif %}
+    </div>
+  </div>
+</nav>

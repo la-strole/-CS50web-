@@ -7,7 +7,9 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required
-from .models import User, Listing
+from django.views import generic
+
+from .models import User, Listing, Wishlist, Category
 from auctions import forms
 
 # Add logger
@@ -19,8 +21,29 @@ logger_views.addHandler(f_handler)
 logger_views.setLevel(os.getenv('DJANGO_LOG_LEVEL'))
 
 
-def index(request):
-    return render(request, "auctions/index.html")
+class Dataset:
+    def __init__(self, listing: Listing, extra_data: dict):
+        self.listing = listing
+        self.ret_url = extra_data['ret_url']
+        self.ret_close_url = extra_data['ret_close_url']
+        self.exist_in_wishlist = extra_data['exist_in_wishlist']
+
+
+class index(generic.ListView):
+    model = Listing
+    context_object_name = 'listings'
+    template_name = 'auctions/index.html'
+
+    def get_queryset(self):
+        listings = Listing.objects.filter(active=True)
+        return listings
+
+    def get_context_data(self, **kwargs):
+        # Call the base implementation first to get the context
+        context = super(index, self).get_context_data(**kwargs)
+        categories = Category.objects.all()
+        context['categories'] = categories
+        return context
 
 
 def login_view(request):
@@ -86,65 +109,149 @@ def create_listing(request):
             result = Listing.create_listing(data)
             if result:
                 success_msg = f"Create new listing: {result.title}."
-                return HttpResponseRedirect(reverse("auctions:listing", kwargs={'listing_id': result.id}))
+                return HttpResponseRedirect(reverse_lazy("auctions:listing", kwargs={'pk': result.id}))
             else:
                 error_msg = 'Can not add this listing, please try again.'
                 return HttpResponseRedirect(reverse("auctions:create_listing"))
 
     elif request.method == "GET":
         form = forms.CreateListing()
-        return render(request, 'auctions/create_listing.html', {'form': form})
+        return render(request, 'auctions/create_listing.html', {'form': form, 'categories': None})
 
 
-def listing_view(request, listing_id: int):
+class ListingView(generic.DetailView):
     """
     Return listing view for listing_id
-    :type listing_id: int
     """
-    if request.method == "GET":
-        try:
-            listing_id = int(listing_id)
-            assert listing_id > 0
-        except (ValueError, AssertionError) as e:
-            logger_views.debug(f"Listing_id in request is not integer. it is ({listing_id})")
 
-        listing = get_object_or_404(Listing, pk=listing_id)
-        if listing.active:
-            current_bid = Listing.get_current_bid(listing)
-            return render(request, "auctions/listing.html", {"data": listing,
-                                                             "current_bid": current_bid
-                                                             })
-        else:
-            msg = "Listing is not active."
-            raise Http404(msg)
-    elif request.method == "POST":
+    model = Listing
+    template_name = 'auctions/listing.html'
+    context_object_name = 'listing'
 
-        try:
-            listing = Listing.objects.get(id=listing_id)
-            assert listing
-            assert listing.active
+    def get_context_data(self, **kwargs):
+        # Call the base implementation first to get the context
+        context = super(ListingView, self).get_context_data(**kwargs)
+        # Create any data and add it to the context
+        user = self.request.user
+        ret_url = reverse('auctions:listing', kwargs={'pk': self.object.id})
+        ret_close_url = reverse('auctions:index')
+        extra_data = {'ret_url': ret_url,
+                      'ret_close_url': ret_close_url,
+                      'exist_in_wishlist': Wishlist.exist_in_wishlist(self.object, user)
+                      }
+        context['listing'] = [Dataset(self.object, extra_data)]
+        return context
 
-            bid = request.POST.get('bid', None)
-            wishlist_id = request.POST.get('wishlist', None)
+    def get_queryset(self):
+        result = Listing.objects.filter(active=True)
+        return result
 
-            # Raise bid
-            if bid:
-                assert int(bid) > int(Listing.get_current_bid(listing))
-                data = {'listing': listing,
-                        'user': request.user,
-                        'bid': bid
-                        }
+
+@login_required(login_url=reverse_lazy("auctions:login"))
+def raise_bid(request, pk):
+    if request.method == "POST":
+        ret_url = request.POST.get('ret_url', '')
+        listing = get_object_or_404(Listing, pk=pk)
+        populated_form = forms.RaiseBid(request.POST)
+        if populated_form.is_valid() and listing.active and ret_url:
+            data = populated_form.cleaned_data
+            current_bid = listing.get_current_bid.value
+            try:
+                assert int(data['value']) > int(current_bid)
+                data.update({'user': request.user, 'listing': listing})
                 result = Listing.raise_bid(data)
-                assert result
+                if not result:
+                    msg = f"Can not raise bid user:{request.user}, listing: {listing}, bid: {data['value']}"
+                    logger_views.error(msg)
 
-            # Add/Delete from wishlist
-            elif wishlist_id:
-
-
-        except (TypeError, ValueError, AssertionError) as e:
-            logger_views.error(f"Can not work with listing. {e}.")
-            msg = "Can not work with listing."
-            raise Http404(msg)
-        return HttpResponseRedirect(reverse("auctions:listing", kwargs={'listing_id': listing_id}))
+                return HttpResponseRedirect(ret_url)
+            except AssertionError:
+                msg = f"{request.user}, your bid {data['value']} is less than previous {current_bid}."
+                logger_views.warning(msg)
+                return HttpResponseRedirect(ret_url)
+        else:
+            raise Http404("Can not open this page. Please, confirm form")
     else:
-        raise Http404("Can not get page.")
+        raise Http404("Can not open this page. Please, confirm form")
+
+
+@login_required(login_url=reverse_lazy("auctions:login"))
+def change_wishlist(request, pk):
+    if request.method == "POST":
+        ret_url = request.POST.get('ret_url', '')
+        listing = get_object_or_404(Listing, pk=pk)
+        exist_in_wishlist = Wishlist.exist_in_wishlist(listing, user=request.user)
+        try:
+            assert ret_url
+            assert listing.active
+            if exist_in_wishlist:
+                result = Wishlist.delete_from_wishlist(listing, user=request.user)
+                try:
+                    assert result
+                    return HttpResponseRedirect(ret_url)
+                except AssertionError:
+                    msg = f"Can not delete from user's {request.user} wishlist for listing {listing}"
+                    logger_views.error(msg)
+                    return Http404(msg)
+            else:
+                result = Wishlist.add_to_wishlist(listing, user=request.user)
+                try:
+                    assert result
+                    return HttpResponseRedirect(ret_url)
+                except AssertionError:
+                    msg = f"Can not add to user's {request.user} wishlist for listing {listing}"
+                    logger_views.error(msg)
+                    return Http404(msg)
+        except AssertionError:
+            msg = f"Can not manipulate with user's {request.user} wishlist for listing {listing}"
+            logger_views.error(msg)
+            raise Http404(msg)
+    else:
+        raise Http404("Can not open this page. Please, confirm form")
+
+
+class WishlistView(generic.ListView):
+    context_object_name = 'listing'
+    template_name = 'auctions/wishlist.html'
+
+    def get_queryset(self):
+        user = self.request.user
+        wish_listings = [wish.listing for wish in Wishlist.objects.filter(user=user, listing__active=True)]
+        ret_url = reverse('auctions:wishlist')
+        ret_close_url = ret_url
+        result = []
+        for listing in wish_listings:
+            extra_data = {'ret_url': ret_url,
+                          'ret_close_url': ret_close_url,
+                          'exist_in_wishlist': Wishlist.exist_in_wishlist(listing, user)
+                          }
+            result.append(Dataset(listing, extra_data))
+        return result
+
+    def get_context_data(self, **kwargs):
+        # Call the base implementation first to get the context
+        context = super(WishlistView, self).get_context_data(**kwargs)
+        categories = Category.objects.all()
+        context['categories'] = categories
+        return context
+
+@login_required(login_url=reverse_lazy("auctions:login"))
+def close_listing(request, pk):
+    if request.method == "POST":
+        ret_url = request.POST.get('ret_url', '')
+        # TODO here add http ecran for pk etc!
+        try:
+            assert pk
+            assert ret_url
+            listing = get_object_or_404(Listing, pk=pk)
+            assert listing.user == request.user
+            result = Listing.close_listing(pk)
+            assert result
+            return HttpResponseRedirect(ret_url)
+        except AssertionError:
+            msg = f"Can not delete listing with id = {pk}"
+            logger_views.error(msg)
+            raise Http404(msg)
+    else:
+        raise Http404()
+

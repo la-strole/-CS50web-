@@ -86,7 +86,7 @@ class Listing(models.Model):
         verbose_name_plural = 'Listings'
 
     def __str__(self):
-        return f'{self.title} from {self.user}'
+        return f'{self.title}'
 
     @staticmethod
     def create_listing(kwargs: dict):

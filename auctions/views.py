@@ -7,6 +7,7 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.views import generic
 
 from .models import User, Listing, Wishlist, Category
@@ -35,6 +36,7 @@ class index(generic.ListView):
     template_name = 'auctions/index.html'
 
     def get_queryset(self):
+        # Use for category filter
         category_name = self.request.GET.get('f', '')
         if category_name:
             listings = Listing.objects.filter(active=True, category__name=category_name)
@@ -50,7 +52,7 @@ class index(generic.ListView):
         context['categories'] = categories
         context['category_bage'] = self.request.GET.get('f', '')
         if self.request.user.is_active:
-            context['wishlist_bage'] = len(Wishlist.objects.filter(user=self.request.user))
+            context['wishlist_bage'] = len(Wishlist.objects.filter(user=self.request.user, listing__active=True))
         else:
             context['wishlist_bage'] = ''
         return context
@@ -67,8 +69,13 @@ def login_view(request):
         # Check if authentication successful
         if user is not None:
             login(request, user)
+            msg = f"You had successfully login as {user}."
+            messages.success(request, msg)
             return HttpResponseRedirect(reverse("auctions:index"))
         else:
+            msg = f"Invalid username {username} and/or password."
+            logger_views.warning(msg)
+            messages.error(request, msg)
             return render(request, "auctions/login.html", {
                 "message": "Invalid username and/or password."
             })
@@ -78,6 +85,8 @@ def login_view(request):
 
 def logout_view(request):
     logout(request)
+    msg = "You successfully logout"
+    messages.success(request, msg)
     return HttpResponseRedirect(reverse("auctions:index"))
 
 
@@ -90,6 +99,9 @@ def register(request):
         password = request.POST["password"]
         confirmation = request.POST["confirmation"]
         if password != confirmation:
+            msg = f"Passwords for user {username} not match."
+            logger_views.warning(msg)
+            messages.error(request, msg)
             return render(request, "auctions/register.html", {
                 "message": "Passwords must match."
             })
@@ -99,10 +111,15 @@ def register(request):
             user = User.objects.create_user(username, email, password)
             user.save()
         except IntegrityError:
+            msg = f"Error. Username {username} already taken."
+            logger_views.warning(msg)
+            messages.error(request, msg)
             return render(request, "auctions/register.html", {
                 "message": "Username already taken."
             })
         login(request, user)
+        msg = f"You are succesfully login as {username}"
+        messages.success(request, msg)
         return HttpResponseRedirect(reverse("auctions:index"))
     else:
         return render(request, "auctions/register.html")
@@ -119,12 +136,20 @@ def create_listing(request):
             data.update({'user': request.user})
             result = Listing.create_listing(data)
             if result:
-                success_msg = f"Create new listing: {result.title}."
+                msg = f"Create new listing: {result.title}."
+                logger_views.warning(msg)
+                messages.success(request, msg)
                 return HttpResponseRedirect(reverse_lazy("auctions:listing", kwargs={'pk': result.id}))
             else:
-                error_msg = 'Can not add this listing, please try again.'
+                msg = 'Can not add this listing, please try again.'
+                logger_views.error(msg)
+                messages.error(request, msg)
                 return HttpResponseRedirect(reverse("auctions:create_listing"))
-
+        else:
+            msg = f"Can not create listing. Form in invalid."
+            logger_views.warning(msg)
+            messages.error(request, msg)
+            return HttpResponseRedirect(reverse("auctions:create_listing"))
     elif request.method == "GET":
         form = forms.CreateListing()
         return render(request, 'auctions/create_listing.html', {'form': form, 'categories': None})
@@ -179,16 +204,26 @@ def raise_bid(request, pk):
                 if not result:
                     msg = f"Can not raise bid user:{request.user}, listing: {listing}, bid: {data['value']}"
                     logger_views.error(msg)
-
-                return HttpResponseRedirect(ret_url)
+                    messages.error(request, msg)
+                    return HttpResponseRedirect(ret_url)
+                else:
+                    msg = f"Successfully raise bid for {listing} to {data['value']} $"
+                    messages.success(request, msg)
+                    return HttpResponseRedirect(ret_url)
             except AssertionError:
                 msg = f"{request.user}, your bid {data['value']} is less than previous {current_bid}."
                 logger_views.warning(msg)
                 return HttpResponseRedirect(ret_url)
         else:
-            raise Http404("Can not open this page. Please, confirm form")
+            msg = "Error. Can not raise bid. Reopen this page. Please, confirm form"
+            logger_views.error(msg)
+            messages.error(request, msg)
+            return HttpResponseRedirect(reverse("auctions:index"))
     else:
-        raise Http404("Can not open this page. Please, confirm form")
+        msg = "Can not open this page. Please, confirm form"
+        logger_views.error(msg)
+        messages.error(request, msg)
+        return HttpResponseRedirect(reverse("auctions:index"))
 
 
 @login_required(login_url=reverse_lazy("auctions:login"))
@@ -204,26 +239,38 @@ def change_wishlist(request, pk):
                 result = Wishlist.delete_from_wishlist(listing, user=request.user)
                 try:
                     assert result
+                    msg = f"Successfully delete {listing} from wishlist."
+                    logger_views.debug(msg)
+                    messages.success(request, msg)
                     return HttpResponseRedirect(ret_url)
                 except AssertionError:
                     msg = f"Can not delete from user's {request.user} wishlist for listing {listing}"
                     logger_views.error(msg)
-                    return Http404(msg)
+                    messages.error(request, msg)
+                    return HttpResponseRedirect(reverse("auctions:index"))
             else:
                 result = Wishlist.add_to_wishlist(listing, user=request.user)
                 try:
                     assert result
+                    msg = f"Successfully add {listing} to wishlist."
+                    logger_views.debug(msg)
+                    messages.success(request, msg)
                     return HttpResponseRedirect(ret_url)
                 except AssertionError:
                     msg = f"Can not add to user's {request.user} wishlist for listing {listing}"
                     logger_views.error(msg)
-                    return Http404(msg)
+                    messages.error(request, msg)
+                    return HttpResponseRedirect(ret_url)
         except AssertionError:
             msg = f"Can not manipulate with user's {request.user} wishlist for listing {listing}"
             logger_views.error(msg)
-            raise Http404(msg)
+            messages.error(request, msg)
+            return HttpResponseRedirect(reverse("auctions:index"))
     else:
-        raise Http404("Can not open this page. Please, confirm form")
+        msg = f"Can not change wishlist. Please, confirm form"
+        logger_views.error(msg)
+        messages.error(request, msg)
+        return HttpResponseRedirect(reverse("auctions:index"))
 
 
 class WishlistView(generic.ListView):
@@ -257,7 +304,7 @@ class WishlistView(generic.ListView):
         context['categories'] = categories
         context['category_bage'] = self.request.GET.get('f', '')
         if self.request.user.is_active:
-            context['wishlist_bage'] = len(Wishlist.objects.filter(user=self.request.user))
+            context['wishlist_bage'] = len(Wishlist.objects.filter(user=self.request.user, listing__active=True))
         else:
             context['wishlist_bage'] = ''
         return context
@@ -267,7 +314,6 @@ class WishlistView(generic.ListView):
 def close_listing(request, pk):
     if request.method == "POST":
         ret_url = request.POST.get('ret_url', '')
-        # TODO here add http ecran for pk etc!
         try:
             assert pk
             assert ret_url
@@ -275,10 +321,31 @@ def close_listing(request, pk):
             assert listing.user == request.user
             result = Listing.close_listing(pk)
             assert result
-            return HttpResponseRedirect(ret_url)
+            winner = result.get('user_winner')
+            if winner == listing.user:
+                msg = f"Unfortunately there is not winner for listing {listing}."
+                logger_views.debug(msg)
+                messages.warning(request, msg)
+                return HttpResponseRedirect(ret_url)
+            elif winner:
+                msg = f"Successfully close listing {listing}. " \
+                      f"Winner is {result['user_winner']} with bid {result['best_bid']} $."
+                logger_views.debug(msg)
+                messages.success(request, msg)
+                # TODO ADD notification for winner
+                return HttpResponseRedirect(ret_url)
+            else:
+                msg = f"Error. Can not find winner."
+                logger_views.error(msg)
+                messages.error(request, msg)
+                return HttpResponseRedirect(ret_url)
         except AssertionError:
             msg = f"Can not delete listing with id = {pk}"
             logger_views.error(msg)
-            raise Http404(msg)
+            messages.error(request, msg)
+            return HttpResponseRedirect(reverse('auctions:index'))
     else:
-        raise Http404()
+        msg = f"Error. Can not close listing."
+        logger_views.error(msg)
+        messages.error(request, msg)
+        return HttpResponseRedirect(reverse('auctions:index'))

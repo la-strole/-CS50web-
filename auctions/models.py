@@ -2,7 +2,7 @@ import logging
 import os
 
 from django.contrib.auth.models import AbstractUser
-from django.db import models
+from django.db import models, IntegrityError
 
 # Add logger
 logger_models = logging.getLogger('models')
@@ -21,8 +21,16 @@ class User(AbstractUser):
         super().__init__(*args, **kwargs)
         self.timestamp = self.date_joined
 
+    @property
+    def wishlist_count(self):
+        result = len(self.wishlist_set.filter(listing__active=True))
+        if result:
+            return result
+        else:
+            return None
+
     def __str__(self):
-        return f'{self.get_username()}({self.get_full_name()})'
+        return f'{self.get_username()}'
 
 
 class Category(models.Model):
@@ -80,6 +88,14 @@ class Listing(models.Model):
         result = max(bids, key=lambda x: x.value)
         return result
 
+    @property
+    def comments(self):
+        comments = self.comments_set.all()
+        if comments:
+            return comments
+        else:
+            return None
+
     class Meta:
         db_table = 'listings'
         verbose_name = 'Listings'
@@ -130,6 +146,21 @@ class Listing(models.Model):
             return result
         except Listing.DoesNotExist:
             logger_models.error(f"Failed to delete listing with id=({id}).")
+            return None
+
+    @staticmethod
+    def listing_filter_by_category(category: str):
+        """
+        Return query set of active listings, filtered by category.
+        :param category: Category instance
+        :return: query set of Listing()
+        """
+        try:
+            result = Listing.objects.filter(active=True, category__name=category)
+            return result
+        except IntegrityError as e:
+            msg = f"Can not get listings by category name. {e}"
+            logger_models.error(msg)
             return None
 
 
@@ -198,6 +229,22 @@ class Comments(models.Model):
         db_table = 'comments'
         verbose_name = 'Comment'
         verbose_name_plural = 'Comments'
+
+    @staticmethod
+    def add_comment(listing: Listing, user: User, text):
+        try:
+            assert isinstance(user, User), f"User is not instance od User class"
+            assert user.is_active, f"{user} user is not active user"
+            assert isinstance(listing, Listing), f"listing {listing} is not instance of Listing class"
+            instance = Comments(user=user,
+                                listing=listing,
+                                text=text)
+            instance.save()
+            return instance
+        except (AssertionError, IntegrityError) as e:
+            msg = f"Error. Can not add text ({text}) as comment to listing {listing} by user {user}. {e}."
+            logger_models.error(msg)
+            return None
 
 
 class Bids(models.Model):

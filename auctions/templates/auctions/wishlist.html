@@ -1,9 +1,28 @@
 {% extends "auctions/layout.html" %}
+{% comment %}
+
+Show wishlist for current user.
+
+context for views:
+     bages class for nav_block;
+     categories: set of Category() to filter in navbar.
+     wish_listings: set of (Listing(), exist_in_wishlist) for current user
+
+{% endcomment %}
+
+
 
 {% block nav_block %}
      {% include "auctions/nav_block.html" %}
 {% endblock %}
 
 {% block body %}
-     {% include "auctions/card_layout.html" %}
+     {% for listing, exist_in_wishlist in wish_listings %}
+          {% include "auctions/listing_layout.html" %}
+     {% empty %}
+     <div class="container text-center">
+          <h2> There are not listings in wishlist yet. </h2>
+     </div>
+     {% endfor %}
+
 {% endblock %}

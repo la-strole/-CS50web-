@@ -1,11 +1,23 @@
 {% extends "auctions/layout.html" %}
+{% comment %}
+
+Detail info for listing
+
+context for view:
+    bages class (with category properties) for nav_block.
+    categories: None
+    exist_in_wishlist - True or False (for current user)
+    listing: Listing() - for listing_layout and comments.
+
+{% endcomment %}
+
+
 
 {% block nav_block %}
      {% include "auctions/nav_block.html" %}
 {% endblock %}
 
 {% block body %}
-    {% include "auctions/card_layout.html" %}
+    {% include "auctions/listing_layout.html" %}
+    {% include "auctions/comments.html" %}
 {% endblock %}
-
-

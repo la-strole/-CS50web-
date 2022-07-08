@@ -1,5 +1,16 @@
 {% extends "auctions/layout.html" %}
 
+{% comment %}
+
+All listing.
+
+context for views:
+    bages class (with category properties) for nav_block.
+    categories: set of Category() to filter in navbar.
+    listings - set of all Listing()
+
+{% endcomment %}
+
 {% load static %}
 {% load humanize %}
 

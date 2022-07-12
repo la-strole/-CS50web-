@@ -19,5 +19,10 @@ urlpatterns = [
     path("<path:url>/change_wishlist/<int:pk>", views.change_wishlist, name="change_wishlist"),
     path("wishlist", views.wishlist_view, name="wishlist"),
     path("<path:url>/close_listing/<int:pk>", views.close_listing, name="close_listing"),
-    path("add_comment/<int:pk>", views.add_comment, name="add_comment")
+    path("add_comment/<int:pk>", views.add_comment, name="add_comment"),
+    path("categories", views.Categories.as_view(), name="categories"),
+    path("notifications/read/<int:pk>", views.mark_notification_read, name="mark_as_read"),
+    path("notifications", login_required(views.NotificationsView.as_view(), login_url=reverse_lazy("auctions:login")),
+         name='notifications'),
+
 ]

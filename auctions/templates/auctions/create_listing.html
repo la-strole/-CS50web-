@@ -18,7 +18,7 @@ context for view:
 
 {% block body %}
     <div class="container-md">
-        <h2> Create a new listing</h2>
+        <h1> Create a new listing</h1>
         <form action="{% url 'auctions:create_listing' %}" method="post">
             {% csrf_token %}
             <div class="row">

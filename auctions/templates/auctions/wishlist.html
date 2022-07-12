@@ -17,6 +17,7 @@ context for views:
 {% endblock %}
 
 {% block body %}
+     <h1 class="text-center mb-4">Watchlist</h1>
      {% for listing, exist_in_wishlist in wish_listings %}
           {% include "auctions/listing_layout.html" %}
      {% empty %}

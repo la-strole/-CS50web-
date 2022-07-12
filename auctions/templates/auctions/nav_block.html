@@ -31,7 +31,7 @@ context for views:
       {% if categories %}
       <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          Category <span class="badge badge-secondary">{{bages.category}}</span>
+          Category filter <span class="badge badge-secondary">{{bages.category}}</span>
         </a>
         {% block category_filter %}
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
@@ -43,9 +43,13 @@ context for views:
               {% endif %}
           {% endfor %}
         </div>
+
         {% endblock %}
       </li>
       {% endif %}
+      <li class="nav-item">
+        <a class="nav-link active" href="{% url 'auctions:categories' %}">Categories</a>
+      </li>
     </ul>
     <div class="navbar-nav">
         {% if user.is_authenticated %}
@@ -53,7 +57,11 @@ context for views:
             Signed in as <strong>{{ user.username }}</strong>
         </span>
         <span class="nav-item">
-            <a class="nav-link active" href="{% url 'auctions:create_listing' %}">Notification</a>
+            {% if user.notifications_count %}
+            <a class="nav-link active" href="{% url 'auctions:notifications' %}">Notification<span class="badge badge-warning">{{user.notifications_count}}</span></a>
+            {% else %}
+            <a class="nav-link active" href="{% url 'auctions:notifications' %}">Notification</a>
+            {% endif %}
         </span>
         <span class="nav-item">
              <a class="nav-link active" href="{% url 'auctions:logout' %}">Log out</a>

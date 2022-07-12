@@ -10,16 +10,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views import generic
 
-from .models import User, Listing, Wishlist, Category, Comments
-from auctions import forms
+from .models import User, Listing, Wishlist, Category, Comments, Info_msg
+from auctions import forms, logger
 
 # Add logger
-logger_views = logging.getLogger('views')
-f_handler = logging.FileHandler('general.log')
-f_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-f_handler.setFormatter(f_format)
-logger_views.addHandler(f_handler)
-logger_views.setLevel(os.getenv('DJANGO_LOG_LEVEL'))
+logger_views = logger.LoggerAuctions('views').logger
 
 
 class Bages:
@@ -59,6 +54,22 @@ class index(generic.ListView):
         context['categories'] = categories
         context['bages'] = Bages(category=self.request.GET.get('f', ''))
         return context
+
+
+class Categories(generic.ListView):
+    model = Category
+    context_object_name = 'categories'
+    template_name = 'auctions/categories.html'
+
+
+class NotificationsView(generic.ListView):
+    model = Info_msg
+    context_object_name = 'notifications'
+    template_name = 'auctions/notifications.html'
+
+    def get_queryset(self):
+        notifications = Info_msg.objects.filter(is_read=False)
+        return notifications
 
 
 def login_view(request):
@@ -316,13 +327,20 @@ def close_listing(request, url, pk):
                 msg = f"Unfortunately there is not winner for listing {listing}."
                 logger_views.debug(msg)
                 messages.warning(request, msg)
+                Info_msg.create_notification(title=f'{msg}',
+                                             text=f"You win yourself listing '{listing}'"
+                                                  f"with bid={result['best_bid']} $.",
+                                             user=result['user_winner'])
                 return HttpResponseRedirect(url)
             elif winner:
                 msg = f"Successfully close listing {listing}. " \
                       f"Winner is {result['user_winner']} with bid {result['best_bid']} $."
+                Info_msg.create_notification(title='You win in auction!',
+                                             text=f"Congratulations! You win listing '{listing}' from {listing.user} "
+                                                  f"with bid={result['best_bid']} $.",
+                                             user=result['user_winner'])
                 logger_views.debug(msg)
                 messages.success(request, msg)
-                # TODO ADD notification for winner
                 return HttpResponseRedirect(url)
             else:
                 msg = f"Error. Can not find winner."
@@ -371,3 +389,17 @@ def add_comment(request, pk):
         logger_views.error(msg)
         messages.error(request, msg)
         return HttpResponseRedirect(reverse('auctions:listing', kwargs={'pk': pk}))
+
+
+@login_required(login_url=reverse_lazy("auctions:login"))
+def mark_notification_read(request, pk: int):
+    result = Info_msg.make_read(pk)
+    if result:
+        msg = f"Make message with id={pk} as read for user {request.user}."
+        logger_views.debug(msg)
+        return HttpResponseRedirect(reverse('auctions:notifications'))
+    else:
+        msg = f"Can not make message read."
+        logger_views.error(f'{msg} for user={request.user}, message_id={pk}.')
+        messages.error(request, msg)
+        return HttpResponseRedirect(reverse('auctions:notifications'))

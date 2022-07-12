@@ -4,13 +4,10 @@ import os
 from django.contrib.auth.models import AbstractUser
 from django.db import models, IntegrityError
 
+from auctions import logger
+
 # Add logger
-logger_models = logging.getLogger('models')
-f_handler = logging.FileHandler('general.log')
-f_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-f_handler.setFormatter(f_format)
-logger_models.addHandler(f_handler)
-logger_models.setLevel(os.getenv('DJANGO_LOG_LEVEL'))
+logger_models = logger.LoggerAuctions('models').logger
 
 
 class User(AbstractUser):
@@ -26,6 +23,14 @@ class User(AbstractUser):
         result = len(self.wishlist_set.filter(listing__active=True))
         if result:
             return result
+        else:
+            return None
+
+    @property
+    def notifications_count(self):
+        result = self.info_msg_set.filter(is_read=False)
+        if result:
+            return len(result)
         else:
             return None
 
@@ -48,9 +53,10 @@ class Category(models.Model):
         db_table = 'category'
         verbose_name = 'Listing Category'
         verbose_name_plural = 'Listing Categories'
+        ordering = ['name']
 
     def __str__(self):
-        return self.name
+        return f'{self.name} ({len(self.listing_set.filter(active=True))})'
 
 
 class Listing(models.Model):
@@ -59,13 +65,14 @@ class Listing(models.Model):
     active = models.BooleanField(default=True, editable=False)
     user = models.ForeignKey(User,
                              on_delete=models.CASCADE,
-                             verbose_name="User id")
+                             verbose_name="User")
     # TODO Change CASCADE to set DEFAULT
     category = models.ForeignKey(Category,
                                  on_delete=models.CASCADE,
                                  verbose_name="Category")
     start_value = models.PositiveIntegerField("Start bet",
-                                              help_text="Start bet (Integer value)")
+                                              help_text="Start bet (Integer value)",
+                                              )
     title = models.CharField("Title",
                              max_length=45,
                              help_text="Title (max 45 characters)")
@@ -93,6 +100,14 @@ class Listing(models.Model):
         comments = self.comments_set.all()
         if comments:
             return comments
+        else:
+            return None
+
+    @property
+    def comments_count(self):
+        result = self.comments_set.all()
+        if result:
+            return len(result)
         else:
             return None
 
@@ -170,11 +185,14 @@ class Wishlist(models.Model):
 
     user = models.ForeignKey(User,
                              on_delete=models.CASCADE,
-                             verbose_name="User id")
+                             verbose_name="User")
     listing = models.ForeignKey(Listing,
                                 related_name='wishlist',
                                 on_delete=models.CASCADE,
-                                verbose_name="Listing id")
+                                verbose_name="Listing")
+
+    def __str__(self):
+        return f"{self.listing}"
 
     class Meta:
         db_table = 'wishlist'
@@ -215,15 +233,18 @@ class Comments(models.Model):
 
     user = models.ForeignKey(User,
                              on_delete=models.SET('Deleted user'),
-                             verbose_name="User id")
+                             verbose_name="User")
     listing = models.ForeignKey(Listing,
                                 on_delete=models.CASCADE,
-                                verbose_name="Listing id")
+                                verbose_name="Listing")
     text = models.TextField("Comment",
                             max_length=120,
                             help_text="Comment (max 120 characters)")
     timestamp = models.DateTimeField(editable=False,
                                      auto_now=True)
+
+    def __str__(self):
+        return f"{self.user}: {self.text}"
 
     class Meta:
         db_table = 'comments'
@@ -252,14 +273,17 @@ class Bids(models.Model):
 
     listing = models.ForeignKey(Listing,
                                 on_delete=models.CASCADE,
-                                verbose_name="Listing id")
+                                verbose_name="Listing")
     user = models.ForeignKey(User,
                              on_delete=models.SET('Deleted user'),
-                             verbose_name="User id")
-    value = models.PositiveIntegerField("New bid",
+                             verbose_name="User")
+    value = models.PositiveIntegerField("Bid",
                                         help_text="Your bid")
     timestamp = models.DateTimeField(editable=False,
                                      auto_now=True)
+
+    def __str__(self):
+        return f"{self.value}"
 
     class Meta:
         db_table = 'bids'
@@ -273,10 +297,43 @@ class Info_msg(models.Model):
     is_read = models.BooleanField(default=False, editable=False)
     user = models.ForeignKey(User,
                              on_delete=models.CASCADE,
-                             verbose_name="User id")
-    text = models.TextField(max_length=120, editable=False)
+                             verbose_name="User")
+    title = models.TextField('Title',
+                             max_length=60)
+    text = models.TextField('Text',
+                            max_length=120)
     timestamp = models.DateTimeField(editable=False,
                                      auto_now=True)
+    author = models.TextField('Author',
+                              max_length=60,
+                              default='Admin',
+                              editable=False)
+
+    def __str__(self):
+        return f'Title: {self.title}'
+
+    @staticmethod
+    def make_read(pk: int):
+        try:
+            result = Info_msg.objects.get(id=pk)
+            result.is_read = True
+            result.save()
+            return result
+        except Info_msg.DoesNotExist as e:
+            msg = f"Can not find notification with id={pk}. {e}."
+            logger_models.error(msg)
+            return None
+
+    @staticmethod
+    def create_notification(title, text, user, author='Admin'):
+        try:
+            result = Info_msg(user=user, title=title, text=text, author=author)
+            result.save()
+            return result
+        except Exception as e:
+            msg = f"Can not create notification for user={user} with text={text} and title={title}. {e}."
+            logger_models.error(msg)
+            return None
 
     class Meta:
         db_table = 'info_msg'

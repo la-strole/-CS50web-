@@ -14,7 +14,7 @@ context for views:
 {% load humanize %}
 
 <div class="card mb-3 mx-auto" style="max-width: 960px;">
-    <a class="card-header text-center text-decoration-none text-reset" href="{% url 'auctions:listing' listing.id %}"><h3 class="mx-auto">{{ listing.title }} </h3> </a>
+    <a class="card-header text-center text-decoration-none text-reset" href="{% url 'auctions:listing' listing.id %}"><h3 class="mx-auto">{{ listing.title|capfirst }} </h3> </a>
     <div class="row no-gutters">
 
         <div class="col-md-4 ">
@@ -27,7 +27,7 @@ context for views:
 
         <div class="col-md-8">
               <div class="card-body">
-                    <h6 class="card-subtitle mb-3 text-muted">Category: {{ listing.category }}</h6>
+                    <h6 class="card-subtitle mb-3 text-muted">Category: {{ listing.category.name|capfirst }}</h6>
                     <p class="card-text h5">{{ listing.description }}</p>
                     <div class="input-group">
                         <div class="input-group-prepend">
@@ -37,7 +37,7 @@ context for views:
               {% if user.is_authenticated %}
                         <form action="{{ request.path }}/raise/{{ listing.id }}" method="post" class="form-inline">
                             {% csrf_token %}
-                            <input type="number" name="value" min="{{ listing.get_current_bid.value|add:"1" }}" class="form-control"  aria-label="bid" aria-descricommbedby="button-addon2">
+                            <input type="number" name="value" min="{{ listing.get_current_bid.value|add:"1" }}" class="form-control"  aria-label="bid" aria-descricommbedby="button-addon2" required>
                             <div class="input-group-append">
                                 <button class="btn btn-outline-success" type="submit" id="button-addon2">Raise</button>
                             </div>

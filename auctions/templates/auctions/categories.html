@@ -1,0 +1,19 @@
+{% extends "auctions/layout.html" %}
+
+{% block nav_block %}
+    {% include "auctions/nav_block.html" %}
+{% endblock %}
+
+{% block body %}
+<h1 class="text-center mb-4">Categories</h1>
+<div class="container">
+    <ul class="list-group">
+        {% for category in categories %}
+        <li class="list-group-item"><a href="{% url 'auctions:index' %}?f={{category.name}}">{{ category|capfirst }}</a></li>
+        {% empty %}}
+        <h2> There are not categories yet. </h2>
+        {% endfor %}
+    </ul>
+</div>
+
+{% endblock %}

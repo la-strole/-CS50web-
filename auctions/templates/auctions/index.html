@@ -20,6 +20,7 @@ context for views:
 
 {% block body %}
 <div class="container p-0">
+    <h1 class="text-center mb-4">Active listings:</h1>
     <div class="row row-cols-1 row-cols-md-2 m-0">
       {% for listing in listings %}
         <div class="col mb-4">
@@ -32,7 +33,7 @@ context for views:
             {% else %}
             <a class="card mb-3 text-decoration-none text-reset h-100 justify-content-between" href="#">
             {% endif %}
-                <div class="card-header text-center"><h3 class="mx-auto">{{ listing.title }} </h3> </div>
+                <div class="card-header text-center"><h3 class="mx-auto">{{ listing.title|capfirst }} </h3> </div>
                 <div class="row no-gutters h-100">
                     <div class="col-md-4 align-self-center">
                         {% if listing.image_url %}
@@ -44,7 +45,7 @@ context for views:
                     <div class="col-md-8">
                         <div class="card-body">
                             <div class="card-text">
-                                <p><small class="text-muted">Category: {{ listing.category }}</small></p>
+                                <p><small class="text-muted">Category: {{ listing.category.name|capfirst }}</small></p>
                                 <h3>
                                     <span class="badge badge-light">Current price: {{ listing.get_current_bid.value|intcomma }} $</span>
                                 </h3>

@@ -244,7 +244,7 @@ class Comments(models.Model):
     id = models.BigAutoField(editable=False, primary_key=True)
 
     user = models.ForeignKey(User,
-                             on_delete=models.SET(0),
+                             on_delete=models.CASCADE,
                              verbose_name="User")
     listing = models.ForeignKey(Listing,
                                 on_delete=models.CASCADE,
@@ -287,7 +287,7 @@ class Bids(models.Model):
                                 on_delete=models.CASCADE,
                                 verbose_name="Listing")
     user = models.ForeignKey(User,
-                             on_delete=models.SET(0),
+                             on_delete=models.CASCADE,
                              verbose_name="User")
     value = models.PositiveIntegerField("Bid",
                                         help_text="Your bid")

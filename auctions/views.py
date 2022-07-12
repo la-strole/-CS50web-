@@ -1,9 +1,6 @@
-import logging
-import os
-
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
-from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required
@@ -18,6 +15,9 @@ logger_views = logger.LoggerAuctions('views').logger
 
 
 class Bages:
+    """
+    For bage in navigation bar.
+    """
     def __init__(self, category):
         self.category = category
 
@@ -32,13 +32,13 @@ class index(generic.ListView):
     template_name = 'auctions/index.html'
 
     def get_queryset(self):
-        # Use for category filter
+        # Use it for category filter.
         category_name = self.request.GET.get('f', '')
         if category_name:
             try:
                 assert category_name in [item.name for item in Category.objects.all()]
             except AssertionError as e:
-                msg = f"Category name ({category_name}) not in categories names"
+                msg = f"Category name ({category_name}) not in categories names. {e}."
                 logger_views.error(msg)
                 messages.error(self.request, msg)
                 return HttpResponseRedirect(reverse('auctions:index'))
@@ -63,6 +63,9 @@ class Categories(generic.ListView):
 
 
 class NotificationsView(generic.ListView):
+    """
+    Get unread notifications.
+    """
     model = Info_msg
     context_object_name = 'notifications'
     template_name = 'auctions/notifications.html'
@@ -75,12 +78,12 @@ class NotificationsView(generic.ListView):
 def login_view(request):
     if request.method == "POST":
 
-        # Attempt to sign user in
+        # Attempt to sign user in.
         username = request.POST["username"]
         password = request.POST["password"]
         user = authenticate(request, username=username, password=password)
 
-        # Check if authentication successful
+        # Check if authentication successful.
         if user is not None:
             login(request, user)
             msg = f"You had successfully login as {user}."
@@ -109,7 +112,7 @@ def register(request):
         username = request.POST["username"]
         email = request.POST["email"]
 
-        # Ensure password matches confirmation
+        # Ensure password matches confirmation.
         password = request.POST["password"]
         confirmation = request.POST["confirmation"]
         if password != confirmation:
@@ -120,7 +123,7 @@ def register(request):
                 "message": "Passwords must match."
             })
 
-        # Attempt to create new user
+        # Attempt to create new user.
         try:
             user = User.objects.create_user(username, email, password)
             user.save()
@@ -132,7 +135,7 @@ def register(request):
                 "message": "Username already taken."
             })
         login(request, user)
-        msg = f"You are succesfully login as {username}"
+        msg = f"You are successfully log in as {username}."
         messages.success(request, msg)
         return HttpResponseRedirect(reverse("auctions:index"))
     else:
@@ -146,7 +149,7 @@ def create_listing(request):
         if populated_form.is_valid():
             data = populated_form.cleaned_data
             data['title'] = data['title'].lower().capitalize()
-            logger_views.debug(f"Try to add  new listing ({data.get('title')}) to database for user {request.user}.")
+            logger_views.debug(f"Try to add new listing ({data.get('title')}) to database for user {request.user}.")
             data.update({'user': request.user})
             result = Listing.create_listing(data)
             if result:
@@ -207,16 +210,17 @@ def raise_bid(request, url, pk):
             data = populated_form.cleaned_data
             current_bid = listing.get_current_bid.value
             try:
+                # If new bid is larger than previous max bid.
                 assert int(data['value']) > int(current_bid)
                 data.update({'user': request.user, 'listing': listing})
                 result = Listing.raise_bid(data)
                 if not result:
-                    msg = f"Can not raise bid user:{request.user}, listing: {listing}, bid: {data['value']}"
+                    msg = f"Can not raise bid user:{request.user}, listing: {listing}, bid: {data['value']}."
                     logger_views.error(msg)
                     messages.error(request, msg)
                     return HttpResponseRedirect(url)
                 else:
-                    msg = f"Successfully raise bid for {listing} to {data['value']} $"
+                    msg = f"Successfully raise bid for {listing} to {data['value']} $."
                     messages.success(request, msg)
                     return HttpResponseRedirect(url)
             except AssertionError:
@@ -224,7 +228,7 @@ def raise_bid(request, url, pk):
                 logger_views.warning(msg)
                 return HttpResponseRedirect(url)
         else:
-            msg = "Error. Can not raise bid. Reopen this page. Please, confirm form"
+            msg = "Error. Can not raise bid. Reopen this page. Please, confirm form."
             logger_views.error(msg)
             messages.error(request, msg)
             return HttpResponseRedirect(reverse("auctions:index"))
@@ -265,12 +269,12 @@ def change_wishlist(request, url, pk):
                     messages.success(request, msg)
                     return HttpResponseRedirect(url)
                 except AssertionError:
-                    msg = f"Can not add to user's {request.user} wishlist for listing {listing}"
+                    msg = f"Can not add to user's {request.user} wishlist for listing {listing}."
                     logger_views.error(msg)
                     messages.error(request, msg)
                     return HttpResponseRedirect(url)
         except AssertionError:
-            msg = f"Can not manipulate with user's {request.user} wishlist for listing {listing}"
+            msg = f"Can not manipulate with user's {request.user} wishlist for listing {listing}."
             logger_views.error(msg)
             messages.error(request, msg)
             return HttpResponseRedirect(reverse("auctions:index"))
@@ -286,6 +290,7 @@ def wishlist_view(request):
     user = request.user
     category_filter = request.GET.get('f', '')
     categories = Category.objects.all()
+    # Category filter at current page (as f argument of GET request).
     if category_filter:
         if category_filter in [item.name for item in categories]:
             wish_listings = [(wish.listing, Wishlist.exist_in_wishlist(wish.listing, user))

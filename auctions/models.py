@@ -1,6 +1,3 @@
-import logging
-import os
-
 from django.contrib.auth.models import AbstractUser
 from django.db import models, IntegrityError
 
@@ -18,8 +15,14 @@ class User(AbstractUser):
         super().__init__(*args, **kwargs)
         self.timestamp = self.date_joined
 
+    def __str__(self):
+        return f'{self.get_username()}'
+
     @property
     def wishlist_count(self):
+        """
+        Returns count of items in wishlist for specific user (integer) or None.
+        """
         result = len(self.wishlist_set.filter(listing__active=True))
         if result:
             return result
@@ -28,14 +31,14 @@ class User(AbstractUser):
 
     @property
     def notifications_count(self):
+        """
+        Return count of notifications for specific user or None.
+        """
         result = self.info_msg_set.filter(is_read=False)
         if result:
             return len(result)
         else:
             return None
-
-    def __str__(self):
-        return f'{self.get_username()}'
 
 
 class Category(models.Model):
@@ -60,13 +63,14 @@ class Category(models.Model):
 
 
 class Listing(models.Model):
-    id = models.AutoField(editable=False, primary_key=True)
+    id = models.AutoField(editable=False,
+                          primary_key=True)
 
-    active = models.BooleanField(default=True, editable=False)
+    active = models.BooleanField(default=True,
+                                 editable=False)
     user = models.ForeignKey(User,
                              on_delete=models.CASCADE,
                              verbose_name="User")
-    # TODO Change CASCADE to set DEFAULT
     category = models.ForeignKey(Category,
                                  on_delete=models.CASCADE,
                                  verbose_name="Category")
@@ -88,7 +92,9 @@ class Listing(models.Model):
 
     @property
     def get_current_bid(self):
-
+        """
+        Returns max bid for specific listing (or start bid if there are no bids).
+        """
         bids = Bids.objects.filter(listing=self)
         if not bids:
             return Bids(listing=self, user=self.user, value=self.start_value - 1)
@@ -97,6 +103,9 @@ class Listing(models.Model):
 
     @property
     def comments(self):
+        """
+        Returns list of comments to specific listing or None (if there are no comments).
+        """
         comments = self.comments_set.all()
         if comments:
             return comments
@@ -105,6 +114,9 @@ class Listing(models.Model):
 
     @property
     def comments_count(self):
+        """
+        Return number of comments to specific listing (or None if there are no comments).
+        """
         result = self.comments_set.all()
         if result:
             return len(result)
@@ -167,8 +179,8 @@ class Listing(models.Model):
     def listing_filter_by_category(category: str):
         """
         Return query set of active listings, filtered by category.
-        :param category: Category instance
-        :return: query set of Listing()
+        :param category: Category instance;
+        :return: query set of Listing().
         """
         try:
             result = Listing.objects.filter(active=True, category__name=category)
@@ -222,7 +234,7 @@ class Wishlist(models.Model):
     @staticmethod
     def exist_in_wishlist(listing: Listing, user: User) -> bool:
         try:
-            instance = Wishlist.objects.get(user=user, listing=listing)
+            Wishlist.objects.get(user=user, listing=listing)
             return True
         except Wishlist.DoesNotExist:
             return False

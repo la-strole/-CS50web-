@@ -1,5 +1,5 @@
 # https://stackoverflow.com/questions/62100550/django-importerror-cannot-import-name-reporterprofile-from-partially-initiali
-from django.forms import ModelForm, Textarea
+from django.forms import ModelForm, Textarea, Select, TextInput, URLInput, NumberInput
 from .models import Listing, Bids, Comments, Info_msg
 
 
@@ -8,7 +8,11 @@ class CreateListing(ModelForm):
         model = Listing
         fields = ['category', 'start_value', 'title', 'description', 'image_url']
         widgets = {
-            'description': Textarea(attrs={'rows': 3, 'cols': 5}, )
+            'category': Select(attrs={'class': 'form-control col-3', 'id': 'select_category'}),
+            'start_value': NumberInput(attrs={'class': 'form-control col-3', 'id': ''}),
+            'title': TextInput(attrs={'class': 'form-control', 'id': 'title'}),
+            'image_url': URLInput(attrs={'class': 'form-control', 'id': 'image_url'}),
+            'description': Textarea(attrs={'class': 'form-control', 'id': 'description', 'rows': 2, 'cols': 60})
         }
 
 
@@ -23,7 +27,7 @@ class CommentsForm(ModelForm):
         model = Comments
         fields = ['text']
         widgets = {
-            'text': Textarea(attrs={'rows': 1, 'cols': 120}, )
+            'text': Textarea(attrs={'class': 'col-12', 'rows': 2, 'cols': 120}, )
         }
 
 

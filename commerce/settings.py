@@ -12,13 +12,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 
 import os
 
-from dotenv import load_dotenv
 from django.contrib.messages import constants as messages
-
-# Load dotenv from .env file
-dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
-load_dotenv(dotenv_path)
-
 
 # Add bootstrap css for django messages
 # (https://ordinarycoders.com/blog/article/django-messages-framework)
@@ -37,19 +31,17 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+SECRET_KEY = 'debugkey'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = (os.getenv('DJANGO_DEBUG_BOOLEAN', 'False') == 'True')
+DEBUG = True
 
-ALLOWED_HOSTS = [os.getenv('DJANGO_ALLOWED_HOST')]
+ALLOWED_HOSTS = []
 
 # Application definition
 
 INSTALLED_APPS = [
     'auctions',
-    # https://simpleisbetterthancomplex.com/tutorial/2018/08/13/how-to-use-bootstrap-4-forms-with-django.html
-    'crispy_forms',
     # https://docs.djangoproject.com/en/4.0/ref/contrib/humanize/
     'django.contrib.humanize',
     'django.contrib.admin',
@@ -60,7 +52,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
-CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -139,4 +130,3 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.getenv('DJANGO_STATIC_ROOT')

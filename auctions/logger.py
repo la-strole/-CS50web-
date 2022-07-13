@@ -11,4 +11,4 @@ class LoggerAuctions:
     def __init__(self, name: str):
         self.logger = logging.getLogger(name)
         self.logger.addHandler(LoggerAuctions.f_handler)
-        self.logger.setLevel(os.getenv('DJANGO_LOG_LEVEL'))
+        self.logger.setLevel('DEBUG')

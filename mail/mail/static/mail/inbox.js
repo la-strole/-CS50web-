@@ -20,6 +20,10 @@ function compose_email() {
   document.querySelector('#compose-recipients').value = '';
   document.querySelector('#compose-subject').value = '';
   document.querySelector('#compose-body').value = '';
+
+  // Change default behavior of submit button and add new event listener to it to run send_mail function
+  document.querySelector('#compose-form').addEventListener('submit', function (event) { event.preventDefault(); send_mail() });
+
 }
 
 function load_mailbox(mailbox) {
@@ -30,4 +34,34 @@ function load_mailbox(mailbox) {
 
   // Show the mailbox name
   document.querySelector('#emails-view').innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
+}
+
+// Send mail
+async function send_mail() {
+  
+  // Get values from form
+  let body = {
+    recipients: document.querySelector('#compose-recipients').value,
+    subject: document.querySelector('#compose-subject').value,
+    body: document.querySelector('#compose-body').value
+  };
+
+  // Make POST request to server
+  try {
+    const response = await fetch('http://127.0.0.1:8000/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    const result = await response.json();
+    console.log(result);
+    // Load sent page
+    load_mailbox('sent');
+  }
+  catch (error) {
+    console.error(error);
+  }
 }

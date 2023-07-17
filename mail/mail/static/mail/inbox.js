@@ -15,13 +15,16 @@ const card_timestamp = document.createElement('h6');
 card_timestamp.classList.add('card-subtitle', 'mb-2', 'text-muted');
 const card_text = document.createElement('p');
 card_text.classList.add('card-text');
+const card_archive_button = document.createElement('a');
+card_archive_button.classList.add('btn', 'btn-primary');
+card_archive_button.href = '#';
 email_card.appendChild(card_body);
 card_body.appendChild(card_title);
 card_body.appendChild(card_sender);
 card_body.appendChild(card_recipients);
 card_body.appendChild(card_timestamp);
 card_body.appendChild(card_text);
-
+card_body.appendChild(card_archive_button);
 
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -80,7 +83,7 @@ function load_mailbox(mailbox) {
       // Create mail row
       let mail_item = document.createElement('a');
       // To detail mail
-      mail_item.href = `javascript:load_email(${mail.id});`;
+      mail_item.href = `javascript:load_email(${mail.id}, '${mailbox}');`;
       mail_item.classList.add('list-group-item', 'list-group-item-action');
       // If mail is read - gray background
       if (mail.read) {
@@ -92,7 +95,7 @@ function load_mailbox(mailbox) {
   });
 }
 
-function load_email(mail_id) {
+function load_email(mail_id, mailbox) {
   // Get mail from server
   const response = get_mail(mail_id);
   response.then((email_object) => {
@@ -106,6 +109,20 @@ function load_email(mail_id) {
     card_recipients.innerHTML = 'To: ' + (email_object.recipients).join(",\n");
     card_timestamp.innerHTML = (email_object.timestamp);
     card_text.innerHTML = (email_object.body);
+    if (mailbox != 'sent') {
+      card_archive_button.style.visibility = 'visible';
+      if (email_object.archived) {
+        card_archive_button.innerHTML = 'Unarchive';
+        card_archive_button.href = `javascript:change_archive(${mail_id}, ${true})`;
+      }
+      else {
+        card_archive_button.innerHTML = 'Archive';
+        card_archive_button.href = `javascript:change_archive(${mail_id}, ${false})`;
+      }
+    }
+    else {
+      card_archive_button.style.visibility = 'hidden';
+    }
   });
   // Make email read
   make_read(mail_id);
@@ -169,7 +186,7 @@ async function get_mail(mail_id){
   }
 }
 
-// Markemail as read API
+// Mark email as read API
 async function make_read(mail_id){
   try {
     const response = await fetch(`http://127.0.0.1:8000/emails/${mail_id}`,
@@ -182,6 +199,27 @@ async function make_read(mail_id){
                                     read: true
                                   })
                                 });
+  }
+  catch(error) {
+    console.error(error);
+  }
+}
+
+// Change Archive tag API
+async function change_archive(mail_id, is_archived){
+  try {
+    const response = await fetch(`http://127.0.0.1:8000/emails/${mail_id}`,
+                                {
+                                  method: 'PUT',
+                                  headers: {
+                                    'Content-Type': 'application/json'
+                                  },
+                                  body: JSON.stringify({
+                                    archived: !is_archived
+                                  })
+                                });
+    // Load inbox
+    load_mailbox('inbox');
   }
   catch(error) {
     console.error(error);

@@ -18,6 +18,11 @@ card_text.classList.add('card-text');
 const card_archive_button = document.createElement('a');
 card_archive_button.classList.add('btn', 'btn-primary');
 card_archive_button.href = '#';
+const card_reply_button = document.createElement('a');
+card_reply_button.href = '#';
+card_reply_button.classList.add('btn', 'btn-primary', 'ml-4');
+card_reply_button.innerHTML = 'Reply';
+
 email_card.appendChild(card_body);
 card_body.appendChild(card_title);
 card_body.appendChild(card_sender);
@@ -25,6 +30,7 @@ card_body.appendChild(card_recipients);
 card_body.appendChild(card_timestamp);
 card_body.appendChild(card_text);
 card_body.appendChild(card_archive_button);
+card_body.appendChild(card_reply_button);
 
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -123,9 +129,33 @@ function load_email(mail_id, mailbox) {
     else {
       card_archive_button.style.visibility = 'hidden';
     }
+    card_reply_button.onclick = () => reply(email_object);
   });
   // Make email read
   make_read(mail_id);
+}
+
+function reply(email_object){
+  // Show compose view and hide other views
+  document.querySelector('#emails-view').style.display = 'none';
+  document.querySelector('#compose-view').style.display = 'block';
+  document.querySelector('#email-view').style.display = 'none';
+
+  // Pre-fill form fields
+  // Recipient - sender
+  document.querySelector('#compose-recipients').value = email_object.sender;
+  // New subject - Re: (if it is not existed)
+  const new_subject = ((email_object.subject).startsWith('Re:') ? email_object.subject : `Re: ${email_object.subject}`);
+  document.querySelector('#compose-subject').value = new_subject;
+  // Pre-fill the body
+  document.querySelector('#compose-body').value = `On ${email_object.timestamp} ${email_object.sender} wrote: ${email_object.body}\n`;
+
+  // Change default behavior of submit button and add new event listener to it to run send_mail function
+  document.querySelector('#compose-form').addEventListener('submit', function (event) { 
+    event.preventDefault(); 
+    const promise = send_mail();     
+    promise.then(() => load_mailbox('sent')); // Load sent page
+  }); 
 }
 
 /* API manipulation */

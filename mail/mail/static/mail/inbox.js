@@ -166,7 +166,7 @@ async function send_mail() {
 
   // Make POST request to server to send mail
   try {
-    const response = await fetch('http://127.0.0.1:8000/emails', {
+    const response = await fetch('/emails', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -187,7 +187,7 @@ async function get_emails(mailbox) {
 
   // Make GET request to server
   try {
-    const response = await fetch(`http://127.0.0.1:8000/emails/${mailbox}`);
+    const response = await fetch(`/emails/${mailbox}`);
 
     const result = response.json();
     return result;
@@ -201,7 +201,7 @@ async function get_emails(mailbox) {
 // View email details API
 async function get_mail(mail_id){
   try {
-    const response = await fetch(`http://127.0.0.1:8000/emails/${mail_id}`);
+    const response = await fetch(`/emails/${mail_id}`);
     const result = response.json();
     return result;
   }
@@ -213,7 +213,7 @@ async function get_mail(mail_id){
 // Mark email as read API
 async function make_read(mail_id){
   try {
-    const response = await fetch(`http://127.0.0.1:8000/emails/${mail_id}`,
+    const response = await fetch(`/emails/${mail_id}`,
                                 {
                                   method: 'PUT',
                                   headers: {
@@ -232,7 +232,7 @@ async function make_read(mail_id){
 // Change Archive tag API
 async function change_archive(mail_id, is_archived){
   try {
-    const response = await fetch(`http://127.0.0.1:8000/emails/${mail_id}`,
+    const response = await fetch(`/emails/${mail_id}`,
                                 {
                                   method: 'PUT',
                                   headers: {

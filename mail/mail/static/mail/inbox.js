@@ -43,30 +43,42 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelector('#inbox').addEventListener('click', () => load_mailbox('inbox'));
   document.querySelector('#sent').addEventListener('click', () => load_mailbox('sent'));
   document.querySelector('#archived').addEventListener('click', () => load_mailbox('archive'));
-  document.querySelector('#compose').addEventListener('click', compose_email);
+  document.querySelector('#compose').addEventListener('click', () => compose_email());
+
+  // Compose email view - Change default behavior of submit button and add new event listener to it to run send_mail function
+  document.querySelector('#compose-form').addEventListener('submit', function (event) { 
+    event.preventDefault(); 
+    const promise = send_mail();     
+    promise.then(() => load_mailbox('sent')); // Load sent page
+  }); 
 
   // By default, load the inbox
   load_mailbox('inbox');
 });
 
-function compose_email() {
+function compose_email(email_object=false) {
 
   // Show compose view and hide other views
   document.querySelector('#emails-view').style.display = 'none';
   document.querySelector('#compose-view').style.display = 'block';
   document.querySelector('#email-view').style.display = 'none';
 
-  // Clear out composition fields
-  document.querySelector('#compose-recipients').value = '';
-  document.querySelector('#compose-subject').value = '';
-  document.querySelector('#compose-body').value = '';
-
-  // Change default behavior of submit button and add new event listener to it to run send_mail function
-  document.querySelector('#compose-form').addEventListener('submit', function (event) { 
-                                                            event.preventDefault(); 
-                                                            const promise = send_mail();     
-                                                            promise.then(() => load_mailbox('sent')); // Load sent page
-                                                          }); 
+  if (!email_object){
+    // Clear out composition fields
+    document.querySelector('#compose-recipients').value = '';
+    document.querySelector('#compose-subject').value = '';
+    document.querySelector('#compose-body').value = '';
+  }
+  else{
+    // Pre-fill form fields
+    // Recipient - sender
+    document.querySelector('#compose-recipients').value = email_object.sender;
+    // New subject - Re: (if it is not existed)
+    const new_subject = ((email_object.subject).startsWith('Re:') ? email_object.subject : `Re: ${email_object.subject}`);
+    document.querySelector('#compose-subject').value = new_subject;
+    // Pre-fill the body
+    document.querySelector('#compose-body').value = `On ${email_object.timestamp} ${email_object.sender} wrote: ${email_object.body}\n`;
+  }
 }
 
 function load_mailbox(mailbox) {
@@ -77,14 +89,19 @@ function load_mailbox(mailbox) {
   document.querySelector('#email-view').style.display = 'none';
 
   // Show the mailbox name
-  document.querySelector('#emails-view').innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
+  let mails_view = document.querySelector('#emails-view');
+  const mailbox_name = document.createElement('h3');
+  mailbox_name.innerHTML = `${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}`;
+  mails_view.appendChild(mailbox_name);
+
   // Get emails
   const promise = get_emails(mailbox);
   promise.then((data) => {
-    console.log(data);
-    // Create email list in DOM
-    let mails_view = document.querySelector('#emails-view');
+    
+    // Clear existing emails list
+    mails_view.replaceChildren(mailbox_name);
     mails_view.classList.add('list-group', 'list-group-flush');
+    // // Create email list in DOM
     for (const mail of data) {
       // Create mail row
       let mail_item = document.createElement('a');
@@ -129,33 +146,10 @@ function load_email(mail_id, mailbox) {
     else {
       card_archive_button.style.visibility = 'hidden';
     }
-    card_reply_button.onclick = () => reply(email_object);
+    card_reply_button.onclick = () => compose_email(email_object);
   });
   // Make email read
   make_read(mail_id);
-}
-
-function reply(email_object){
-  // Show compose view and hide other views
-  document.querySelector('#emails-view').style.display = 'none';
-  document.querySelector('#compose-view').style.display = 'block';
-  document.querySelector('#email-view').style.display = 'none';
-
-  // Pre-fill form fields
-  // Recipient - sender
-  document.querySelector('#compose-recipients').value = email_object.sender;
-  // New subject - Re: (if it is not existed)
-  const new_subject = ((email_object.subject).startsWith('Re:') ? email_object.subject : `Re: ${email_object.subject}`);
-  document.querySelector('#compose-subject').value = new_subject;
-  // Pre-fill the body
-  document.querySelector('#compose-body').value = `On ${email_object.timestamp} ${email_object.sender} wrote: ${email_object.body}\n`;
-
-  // Change default behavior of submit button and add new event listener to it to run send_mail function
-  document.querySelector('#compose-form').addEventListener('submit', function (event) { 
-    event.preventDefault(); 
-    const promise = send_mail();     
-    promise.then(() => load_mailbox('sent')); // Load sent page
-  }); 
 }
 
 /* API manipulation */
@@ -180,8 +174,8 @@ async function send_mail() {
       body: JSON.stringify(body)
     });
 
-    const result = await response.json();
-
+    const result = response.json();
+    return result;
   }
   catch (error) {
     console.error(error);
@@ -195,7 +189,7 @@ async function get_emails(mailbox) {
   try {
     const response = await fetch(`http://127.0.0.1:8000/emails/${mailbox}`);
 
-    const result = await response.json();
+    const result = response.json();
     return result;
 
   }
@@ -208,7 +202,7 @@ async function get_emails(mailbox) {
 async function get_mail(mail_id){
   try {
     const response = await fetch(`http://127.0.0.1:8000/emails/${mail_id}`);
-    const result = await response.json();
+    const result = response.json();
     return result;
   }
   catch (error) {

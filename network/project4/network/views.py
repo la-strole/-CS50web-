@@ -8,6 +8,8 @@ from .models import User
 
 
 def index(request):
+    # Get 10 latest posts
+    
     return render(request, "network/index.html")
 
 

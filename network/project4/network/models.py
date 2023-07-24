@@ -13,5 +13,8 @@ class Post(models.Model):
     timestamp = models.DateTimeField(editable=False)
     like_count = models.PositiveSmallIntegerField(default=0)
 
+    class Meta:
+        ordering = ["-timestamp"]
+
     def __str__(self):
         return f"{self.author}:{self.post_text}"

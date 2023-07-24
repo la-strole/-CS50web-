@@ -4,13 +4,13 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 
-from .models import User
+from .models import User, Post
 
 
 def index(request):
     # Get 10 latest posts
-    
-    return render(request, "network/index.html")
+    ten_last_posts = Post.objects.all()[:10]
+    return render(request, "network/index.html", {'ten_last_posts':ten_last_posts})
 
 
 def login_view(request):

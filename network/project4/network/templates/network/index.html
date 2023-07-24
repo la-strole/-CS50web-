@@ -2,5 +2,15 @@
 
 {% block body %}
     <!-- 10 posts  -->
-    
+    {% for post in ten_last_posts %}
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title">{{ post.author }}</h5>
+                <a href="#" class="btn btn-primary">Edit</a>
+                <p class="card-text">{{ post.post_text }}</p>
+                <a href='#'>😻 {{ post.like_count }}</a>
+            </div>
+            <div class="card-footer">{{ post.timestamp }}</div>
+        </div>
+    {% endfor %}
 {% endblock %}

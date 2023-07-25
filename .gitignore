@@ -149,3 +149,8 @@ dmypy.json
 
 
 migrations/
+node_modules/
+.eslintrc.yml
+package-lock.json
+package.json
+launch.json

@@ -1,16 +1,25 @@
 {% extends "network/layout.html" %}
+{% load static %}
+
 
 {% block body %}
-    <!-- 10 posts  -->
-    {% for post in ten_last_posts %}
-        <div class="card mt-4">
-            <div class="card-body">
-                <h5 class="card-title">{{ post.author }}</h5>
-                <a href="#" class="btn btn-primary">Edit</a>
-                <p class="card-text">{{ post.post_text }}</p>
-                <a href='#'>😻 {{ post.like_count }}</a>
-            </div>
-            <div class="card-footer">{{ post.timestamp }}</div>
-        </div>
-    {% endfor %}
+    <!-- Add new post form -->
+    {% if user.is_authenticated %}
+      {% csrf_token %}
+      <form class="m-4" id="newPostForm">
+          <div class="form-group">
+            <label for="newPostText">New Post</label>
+            <textarea class="form-control" id="newPostText" name="newPostText" autocomplete="off"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Post</button>
+      </form>
+    {% endif %}
+    <!-- Here latest posts -->
+    <div id="postSection"></div>
+{% endblock %}
+
+<!-- SCripts to load with index page - not login or register -->
+{% block indexScript %}
+  <script src="{% static 'network/index.js' %}" type="text/javascript"></script>
+  <script src=" https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js "></script>
 {% endblock %}

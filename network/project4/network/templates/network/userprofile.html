@@ -1,20 +1,23 @@
 {% extends "network/layout.html" %}
 {% load static %}
 
-
 {% block body %}
-    <!-- Add new post form -->
-    {% if user.is_authenticated %}
-      <form action="api/newPost" method='post' class="m-4" id="newPostForm">
-          {% csrf_token %}
-          <div class="form-group">
-            <label for="newPostText">New Post</label>
-            <textarea class="form-control" id="newPostText" name="newPostText" autocomplete="off"></textarea>
-          </div>
-          <button type="submit" class="btn btn-primary">Post</button>
-      </form>
-    {% endif %}
-    <!-- Here are latest posts -->
+    <!-- User profile card -->
+    <div class="card" width="18rem">
+        <div class="card-body">
+          <h3 class="card-title">{{username}}</h3>
+          <p class="card-text">followers: {{followers_count}}</p>
+          <p class="card-text">
+            user follows: {{followed_count}}
+          </p>
+          {% if user.is_authenticated and user.username != username %}
+            <button class="btn btn-primary" id="followButton">
+                {{ is_following }}
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    <!-- Users posts list-->
     {% for post in post_list %}
       <div class="card mt-4">
         <div class="card-body">

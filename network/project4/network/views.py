@@ -5,13 +5,16 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
-from .models import User, Post
+from .models import User, Post, Followers
 from .forms import NewPostForm
 
 import datetime
 
 def index(request):
-    return render(request, "network/index.html")
+    ten_last_posts = Post.objects.all()[:10]
+    response = [post.get_post() for post in ten_last_posts]
+    context = {'post_list': response}
+    return render(request, "network/index.html", context)
 
 
 def login_view(request):
@@ -76,14 +79,31 @@ def api_new_post(request):
                 timestamp = datetime.datetime.now()
             )
             post.save()
-            return JsonResponse({'status': 'success'})
+            return HttpResponseRedirect(reverse("index"))
         else:
             return JsonResponse({'errors': form.errors})
     else:
         return HttpResponseRedirect(reverse("index"))
+
+def user_profile(request):
+    username = request.GET.get("username")
+    if username:
+        u = User.objects.get(username=username)
+        if u:
+            followed_count = len(u.followed_by_user.all())
+            followers_count = len(u.followed_by_another.all())
+            is_following = 'Unfollow' if (Followers.objects.filter(follower=request.user, followed=u).exists()) else 'Follow'
+            ten_last_posts = Post.objects.filter(author__username=username)[:10]
+            response = [post.get_post() for post in ten_last_posts]
+            context = {
+                       'username': username,
+                       'followed_count': followed_count,
+                       'followers_count': followers_count,
+                       'is_following': is_following,
+                       'post_list': response
+                       }
+            return render(request, "network/userprofile.html", context)
+    else:
+        print('Error, get request without username')
+        return HttpResponseRedirect(reverse("index"))
     
-def api_posts_list(request):
-    # Get 10 latest posts
-    ten_last_posts = Post.objects.all()[:10]
-    response = [post.get_post_json() for post in ten_last_posts]
-    return JsonResponse({"response": response})

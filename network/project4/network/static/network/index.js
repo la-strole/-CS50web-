@@ -7,33 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     addListPostsToDom(posts, postSection)
   })
 
-  // POST new post
-  const newPostForm = document.querySelector('#newPostForm')
-  if (newPostForm) {
-    newPostForm.addEventListener('submit', async function (event) {
-      // Prevent the default form submission behavior
-      event.preventDefault()
-      const data = new FormData(newPostForm)
-      const url = 'api/newPost'
-      const result = await fetch(url,
-        {
-          headers: { 'X-CSRFToken': csrftoken },
-          method: 'POST',
-          body: data
-        })
-      const response = await result.json()
-      if (response.status === 'success') {
-        // update page with new post
-        document.querySelector('#postSection').innerHTML = ''
-        getLatestPosts().then((posts) => {
-          addListPostsToDom(posts, document.querySelector('#postSection'))
-        })
-        // clear form value
-        document.querySelector('#newPostText').value = ''
-      }
-    })
-  }
-})
+ 
 
 async function getLatestPosts () {
   const url = '/api/postsList'

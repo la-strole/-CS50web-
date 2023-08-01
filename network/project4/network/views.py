@@ -136,4 +136,11 @@ def api_follow(request):
             return JsonResponse({'status': 'failed'})
     else:
         return JsonResponse({'status': 'failed'})
-    
+
+def followed_users(request):
+    followed_users_queryset = request.user.followed_by_user.all()
+    followed_users = [_.followed for _ in followed_users_queryset]
+    ten_last_posts = Post.objects.filter(author__in=followed_users)[:10]
+    response = [post.get_post() for post in ten_last_posts]
+    context = {'post_list': response}
+    return render(request, "network/index.html", context)

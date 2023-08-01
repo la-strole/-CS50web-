@@ -6,12 +6,17 @@
     <div class="card" width="18rem">
         <div class="card-body">
           <h3 class="card-title">{{username}}</h3>
-          <p class="card-text">followers: {{followers_count}}</p>
+          <p class="card-text">followers: <span id="followersCount">{{followers_count}}</span></p>
           <p class="card-text">
             user follows: {{followed_count}}
           </p>
           {% if user.is_authenticated and user.username != username %}
-            <button class="btn btn-primary" id="followButton">
+            <button class="btn btn-primary" 
+                    id="followButton" 
+                    data-followfrom="{{user.id}}" 
+                    data-followto="{{user_id}}"
+                    value = {{is_following}}
+            >
                 {{ is_following }}
             </button>
           {% endif %}
@@ -32,4 +37,8 @@
         <div class="card-footer">{{post.timestamp}}</div>
       </div>
     {% endfor %}
+{% endblock %}
+
+{% block Script%}
+    <script src="{% static 'network/userprofile.js' %}" type="module"></script>
 {% endblock %}

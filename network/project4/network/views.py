@@ -9,6 +9,7 @@ from .models import User, Post, Followers
 from .forms import NewPostForm
 
 import datetime
+import json
 
 def index(request):
     ten_last_posts = Post.objects.all()[:10]
@@ -92,11 +93,14 @@ def user_profile(request):
         if u:
             followed_count = len(u.followed_by_user.all())
             followers_count = len(u.followed_by_another.all())
-            is_following = 'Unfollow' if (Followers.objects.filter(follower=request.user, followed=u).exists()) else 'Follow'
+            if request.user.is_authenticated:
+                is_following = 'Unfollow' if (Followers.objects.filter(follower=request.user, followed=u).exists()) else 'Follow'
+            else: is_following = 'Not authenticated'
             ten_last_posts = Post.objects.filter(author__username=username)[:10]
             response = [post.get_post() for post in ten_last_posts]
             context = {
                        'username': username,
+                       'user_id': u.id,
                        'followed_count': followed_count,
                        'followers_count': followers_count,
                        'is_following': is_following,
@@ -106,4 +110,30 @@ def user_profile(request):
     else:
         print('Error, get request without username')
         return HttpResponseRedirect(reverse("index"))
+
+@require_http_methods(['PUT'])
+def api_follow(request):
+    raw_data = request.body
+    decoded_data = raw_data.decode('utf-8')
+    data = json.loads(decoded_data)
+    followFrom = data.get('fallowFrom', None)
+    followTo = data.get('fallowTo', None)
+    if (followFrom and followTo and followFrom != followTo):
+        # Try to add relationship
+        try:
+            followerUser = User.objects.get(pk=followFrom)
+            followwingUser = User.objects.get(pk=followTo)
+            # If users are already following
+            is_following = Followers.objects.filter(follower=followerUser, followed=followwingUser).exists() 
+            if is_following:
+                follower_relationship = Followers.objects.get(follower=followerUser, followed=followwingUser)
+                follower_relationship.delete()
+            else:
+                relations = Followers(follower=followerUser, followed=followwingUser)
+                relations.save()
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'status': 'failed'})
+    else:
+        return JsonResponse({'status': 'failed'})
     

@@ -4,7 +4,7 @@ from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
-
+from django.core.paginator import Paginator
 from .models import User, Post, Followers
 from .forms import NewPostForm
 
@@ -12,9 +12,14 @@ import datetime
 import json
 
 def index(request):
-    ten_last_posts = Post.objects.all()[:10]
-    response = [post.get_post() for post in ten_last_posts]
-    context = {'post_list': response}
+    page_number = request.GET.get('page', 1)
+    last_posts = Post.objects.all()
+    paginator = Paginator(last_posts, 10)
+    page_obj = paginator.get_page(page_number)
+    response = [post.get_post() for post in page_obj]
+    context = {'post_list': response,
+               'page_obj': page_obj
+              }
     return render(request, "network/index.html", context)
 
 
@@ -88,6 +93,7 @@ def api_new_post(request):
 
 def user_profile(request):
     username = request.GET.get("username")
+    page_number = request.GET.get('page', 1)
     if username:
         u = User.objects.get(username=username)
         if u:
@@ -96,15 +102,18 @@ def user_profile(request):
             if request.user.is_authenticated:
                 is_following = 'Unfollow' if (Followers.objects.filter(follower=request.user, followed=u).exists()) else 'Follow'
             else: is_following = 'Not authenticated'
-            ten_last_posts = Post.objects.filter(author__username=username)[:10]
-            response = [post.get_post() for post in ten_last_posts]
+            last_posts = Post.objects.filter(author__username=username)
+            paginator = Paginator(last_posts, 10)
+            page_obj = paginator.get_page(page_number)
+            response = [post.get_post() for post in page_obj]
             context = {
                        'username': username,
                        'user_id': u.id,
                        'followed_count': followed_count,
                        'followers_count': followers_count,
                        'is_following': is_following,
-                       'post_list': response
+                       'post_list': response,
+                       'page_obj': page_obj
                        }
             return render(request, "network/userprofile.html", context)
     else:
@@ -138,9 +147,14 @@ def api_follow(request):
         return JsonResponse({'status': 'failed'})
 
 def followed_users(request):
+    page_number = request.GET.get('page', 1)
     followed_users_queryset = request.user.followed_by_user.all()
     followed_users = [_.followed for _ in followed_users_queryset]
-    ten_last_posts = Post.objects.filter(author__in=followed_users)[:10]
-    response = [post.get_post() for post in ten_last_posts]
-    context = {'post_list': response}
+    last_posts = Post.objects.filter(author__in=followed_users)
+    paginator = Paginator(last_posts, 10)
+    page_obj = paginator.get_page(page_number)
+    response = [post.get_post() for post in page_obj]
+    context = {'post_list': response,
+               'page_obj': page_obj
+              }
     return render(request, "network/index.html", context)

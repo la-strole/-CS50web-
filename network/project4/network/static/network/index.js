@@ -1,4 +1,4 @@
-import { editPostApi } from './api.js'
+import { editPostApi, likePostApi, dislikePostApi } from './api.js'
 
 function editButtonClick () {
   // Show postEdit form
@@ -43,6 +43,34 @@ function saveButtonClick (saveButton) {
   })
 }
 
+function likeButtonClick (likebutton) {
+  console.log('Like button clicked')
+  const postId = likebutton.dataset.postid.slice(2)
+  const response = likePostApi(postId)
+  response.then((data) => {
+    if (data.status === 'success') {
+      // Change like count
+      likebutton.innerHTML = `😻 ${data.likeCount}`
+    } else {
+      console.error('Error with getting like count API')
+    }
+  })
+}
+
+function dislikeButtonClick (dislikebutton) {
+  console.log('Dislike button clicked')
+  const postId = dislikebutton.dataset.postid.slice(2)
+  const response = dislikePostApi(postId)
+  response.then((data) => {
+    if (data.status === 'success') {
+      // Change like count
+      dislikebutton.innerHTML = `👎 ${data.dislikeCount}`
+    } else {
+      console.error('Error with getting dislike count API')
+    }
+  })
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // Find Edit buttons and add Eventlisteners to them
   const editButtons = document.querySelectorAll('.editbutton')
@@ -56,4 +84,10 @@ document.addEventListener('DOMContentLoaded', () => {
       saveButtonClick(saveButton)
     })
   })
+  // Find All like buttons and add Event listener
+  const likeButtons = document.querySelectorAll('.likebutton')
+  likeButtons.forEach((likebutton) => { likebutton.addEventListener('click', () => likeButtonClick(likebutton)) })
+  // Find All dislike buttons and add Event listener
+  const dislikeButtons = document.querySelectorAll('.dislikebutton')
+  dislikeButtons.forEach((dislikebutton) => { dislikebutton.addEventListener('click', () => dislikeButtonClick(dislikebutton)) })
 })

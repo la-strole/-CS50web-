@@ -40,8 +40,8 @@
             </form>
             <button class="btn btn-outline-primary btn-sm editbutton" data-postid="id{{post.id}}">Edit</button>
           {% endif %}
-          <a href='#'>😻 {{post.likeCount}}</a>
-          <a href='#'>👎 {{post.unlikeCount}}</a>
+          <span class="likebutton" style="cursor: pointer;" data-postid='id{{post.id}}'>😻 {{post.likeCount}}</span>
+          <span class="dislikebutton" style="cursor: pointer;" data-postid='id{{post.id}}'>👎 {{post.unlikeCount}}</span>
         </div>
         <div class="card-footer">{{post.timestamp}}</div>
       </div>

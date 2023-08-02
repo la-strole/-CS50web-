@@ -181,3 +181,45 @@ def api_edit_post(request):
         except Exception as e:
             return JsonResponse({'status': e})
     return JsonResponse({'status': 'failed. not post_id or postText in request'})
+
+@require_http_methods(['PUT'])
+def api_like_button(request):
+    # Get values from PUT request
+    raw_data = request.body
+    decoded_data = raw_data.decode('utf-8')
+    data = json.loads(decoded_data)
+    post_id = data.get('postId', None)
+    if (post_id):
+        try:
+            post = Post.objects.get(id=post_id)
+            if post:
+                post.like_count = post.like_count + 1
+                post.save()
+                return JsonResponse({
+                    'status': 'success',
+                    'likeCount': f'{post.like_count}'
+                })
+        except Exception as e:
+            return JsonResponse({'status': e})
+    return JsonResponse({'status': 'failed'})
+
+@require_http_methods(['PUT'])
+def api_dislike_button(request):
+    # Get values from PUT request
+    raw_data = request.body
+    decoded_data = raw_data.decode('utf-8')
+    data = json.loads(decoded_data)
+    post_id = data.get('postId', None)
+    if (post_id):
+        try:
+            post = Post.objects.get(id=post_id)
+            if post:
+                post.unlike_count = post.unlike_count + 1
+                post.save()
+                return JsonResponse({
+                    'status': 'success',
+                    'dislikeCount': f'{post.unlike_count}'
+                })
+        except Exception as e:
+            return JsonResponse({'status': e})
+    return JsonResponse({'status': 'failed'})

@@ -12,4 +12,5 @@ urlpatterns = [
     path("userProfile", views.user_profile, name="user_profile"),
     path("api/follow", views.api_follow, name="api_follow"),
     path("followedUsers", views.followed_users, name="followed_users"),
+    path("api/editpost", views.api_edit_post, name="api_edit_post")
 ]

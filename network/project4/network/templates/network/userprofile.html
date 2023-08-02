@@ -25,12 +25,20 @@
 
     <!-- Users posts list-->
     {% for post in post_list %}
-      <div class="card mt-4">
+      <div class="card mt-4" id='id{{post.id}}'>
         <div class="card-body">
           <a href="userProfile?username={{post.author}}" class="card-title">{{post.author}}</a>
           <p class="card-text">{{post.postText}}</p>
           {% if post.author == user.username %}
-            <a href="#" class="btn btn-outline-primary btn-sm">Edit</a>
+            <!-- Add Edit post form -->
+            <form class="m-4 posteditform" style="display: none;">
+              <div class="form-group">
+                <label for="newPostText">Edit Post</label>
+                <textarea class="form-control posttext" name="EditedPostText" autocomplete="off">{{post.postText}}</textarea>
+              </div>
+                <button type="submit" class="btn btn-primary savebutton" data-postid="id{{post.id}}">Save</button>
+            </form>
+            <button class="btn btn-outline-primary btn-sm editbutton" data-postid="id{{post.id}}">Edit</button>
           {% endif %}
           <a href='#'>😻 {{post.likeCount}}</a>
           <a href='#'>👎 {{post.unlikeCount}}</a>

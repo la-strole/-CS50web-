@@ -30,7 +30,8 @@ class Post(models.Model):
                 'author' : self.author.username,
                 'timestamp' : self.timestamp.strftime("%d-%m-%Y %H:%M:%S"),
                 'likeCount' : self.like_count,
-                'unlikeCount': self.unlike_count
+                'unlikeCount': self.unlike_count,
+                'id': self.id
             }
         )
     def __str__(self):

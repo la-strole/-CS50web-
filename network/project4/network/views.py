@@ -158,3 +158,26 @@ def followed_users(request):
                'page_obj': page_obj
               }
     return render(request, "network/index.html", context)
+
+@require_http_methods(['PUT'])
+def api_edit_post(request):
+    # Get values from PUT request
+    raw_data = request.body
+    decoded_data = raw_data.decode('utf-8')
+    data = json.loads(decoded_data)
+    post_id = data.get('postId', None)
+    post_text = data.get('postText', None)
+    if (post_id and post_text):
+        # Check post author to make sure he has permission to edit post
+        # Try to find post in DB
+        try:
+            post = Post.objects.get(id=post_id)
+            if post:
+                author = post.author
+                if author == request.user:
+                    post.post_text = post_text
+                    post.save()
+                    return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'status': e})
+    return JsonResponse({'status': 'failed. not post_id or postText in request'})
